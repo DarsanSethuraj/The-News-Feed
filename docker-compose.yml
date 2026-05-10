@@ -1,0 +1,114 @@
+# docker compose up --build
+
+# For Ubuntu
+# cd ~/news-platform
+
+# For the tables
+# docker compose exec backend alembic upgrade head
+# Do this after every compose down 
+
+#used to remove data volumes when you want to reset the database and redis data, be careful with this command as it will delete all data in the volumes
+# docker compose down -v
+
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: newsdb
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: .
+    restart: unless-stopped
+
+    command: >
+      sh -c "
+      sleep 5 &&
+      uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - .:/app
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/newsdb
+      REDIS_URL: redis://redis:6379
+
+  worker:
+    build: .
+    restart: unless-stopped
+
+    command: >
+      sh -c "
+      sleep 10 &&
+      celery -A celery_app.celery worker --loglevel=info
+      "
+
+    volumes:
+      - .:/app
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/newsdb
+      REDIS_URL: redis://redis:6379
+
+  beat:
+    build: .
+    restart: unless-stopped
+
+    command: >
+      sh -c "
+      sleep 10 &&
+      celery -A celery_app.celery beat --loglevel=info
+      "
+
+    volumes:
+      - .:/app
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/newsdb
+      REDIS_URL: redis://redis:6379
+
+volumes:
+  postgres_data:
+  redis_data:

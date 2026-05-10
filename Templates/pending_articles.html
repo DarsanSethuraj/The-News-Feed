@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pending Articles</title>
+</head>
+<body>
+    <h1>Pending Articles</h1>
+
+    {% for article in articles %}
+        <div id="article-{{ article.id }}" style="
+            border:1px solid #ccc;
+            padding:15px;
+            margin-bottom:20px;
+            transition: all 0.3s ease;
+        ">
+            <h2>{{ article.title }}</h2>
+
+            {% if article.image_url %}
+                <img src="{{ article.image_url }}" width="300">
+            {% endif %}
+            
+            <p style="color: #5f0000; font-weight: 500;">
+                <strong style="color: #111;">Author:</strong> {{ article.author }}
+            </p>
+
+            <p><strong>Category:</strong> {{ article.category }}</p>
+
+            <div style="
+                line-height: 1.8;
+                font-size: 17px;
+                margin-top: 15px;
+            ">
+                {{ article.content | safe }}
+            </div>
+
+            <button onclick="moderateArticle({{ article.id }}, 'approve')">
+                Approve
+            </button>
+
+            <button 
+                onclick="confirmBreaking({{ article.id }})"
+                style="
+                    background: red;
+                    color: white;
+                    font-weight: bold;
+                "
+            >
+                BREAKING
+            </button>
+
+            <button onclick="moderateArticle({{ article.id }}, 'reject')">
+                Reject
+            </button>
+        </div>
+    {% endfor %}
+
+    <script>
+        async function moderateArticle(articleId, action) {
+            try {
+                const res = await fetch("/" + action + "/" + articleId, {
+                    method: "POST"
+                });
+
+                const articleEl = document.getElementById("article-" + articleId);
+
+                if (!res.ok) {
+                    articleEl.style.backgroundColor = "#fff3cd";
+                    articleEl.style.borderColor = "#ff9800";
+                    return;
+                }
+
+                if (action === "approve") {
+                    articleEl.style.backgroundColor = "#d4edda";
+                    articleEl.style.borderColor = "green";
+                } else {
+                    articleEl.style.backgroundColor = "#f8d7da";
+                    articleEl.style.borderColor = "red";
+                }
+
+                setTimeout(function () {
+                    articleEl.remove();
+                }, 800);
+
+            } catch (err) {
+                const articleEl = document.getElementById("article-" + articleId);
+                articleEl.style.backgroundColor = "#fff3cd";
+                articleEl.style.borderColor = "#ff9800";
+            }
+        }
+
+        async function confirmBreaking(articleId) {
+
+            const confirmed = confirm(
+                "Force publish this article as BREAKING news?"
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+
+                const res = await fetch(
+                    "/breaking/" + articleId,
+                    {
+                        method: "POST"
+                    }
+                );
+
+                const articleEl = document.getElementById(
+                    "article-" + articleId
+                );
+
+                if (!res.ok) {
+
+                    articleEl.style.backgroundColor = "#fff3cd";
+                    articleEl.style.borderColor = "#ff9800";
+
+                    return;
+                }
+
+                articleEl.style.backgroundColor = "#cccfff";
+                articleEl.style.borderColor = "blue";
+
+                setTimeout(function () {
+
+                    articleEl.remove();
+
+                }, 800);
+
+            } catch (err) {
+
+                const articleEl = document.getElementById(
+                    "article-" + articleId
+                );
+
+                articleEl.style.backgroundColor = "#fff3cd";
+                articleEl.style.borderColor = "#ff9800";
+            }
+        }
+    </script>
+</body>
+</html>
