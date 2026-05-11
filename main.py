@@ -153,7 +153,12 @@ def client_feed(api_key: str, domain: str):
 
     
     if client.last_feed_request:
-        elapsed = now - client.last_feed_request
+        last_request = client.last_feed_request
+
+        if last_request.tzinfo is None:
+            last_request = last_request.replace(tzinfo=IST)
+
+        elapsed = now - last_request
 
         if elapsed < cooldown:
             remaining = cooldown - elapsed
