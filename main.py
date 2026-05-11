@@ -1,3 +1,5 @@
+import math
+
 from fastapi import FastAPI, HTTPException
 from database import engine
 from models import Base
@@ -286,7 +288,7 @@ def client_feed(api_key: str, domain: str):
 
     articles_to_release = max(
         0,
-        round(posts_per_hour)
+        math.ceil(posts_per_hour)
     )
 
     if articles_to_release <= 0:
