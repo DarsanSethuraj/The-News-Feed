@@ -287,7 +287,7 @@ def client_feed(api_key: str, domain: str):
         posts_per_hour *= 1.8
 
     articles_to_release = max(
-        0,
+        1 if remaining_quota > 0 else 0,
         math.ceil(posts_per_hour)
     )
 
