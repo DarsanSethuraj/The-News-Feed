@@ -146,10 +146,10 @@ def client_feed(api_key: str, domain: str):
     # Cooldown / Rate Limiting for API requests
 
     
-    cooldown = timedelta(minutes=1)
+    cooldown = timedelta(minutes=15)
     now = datetime.now(IST)
 
-    """
+    
     if client.last_feed_request:
         elapsed = now - client.last_feed_request
 
@@ -160,7 +160,7 @@ def client_feed(api_key: str, domain: str):
             return {
                 "error": f"Feed requested too frequently. Retry after {remaining.seconds} seconds."
             }
-    """
+    
     client.last_feed_request = now
     
 
@@ -473,3 +473,5 @@ def acknowledge_delivery(payload: DeliveryAckRequest):
 
     finally:
         db.close()
+
+# test
