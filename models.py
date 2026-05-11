@@ -52,6 +52,7 @@ class DeliveryLog(Base):
     article_id = Column(Integer)
 
     delivered_at = Column(DateTime, default=datetime.now(IST))
-
+    success = Column(Boolean, default=True)
+    
 
 
