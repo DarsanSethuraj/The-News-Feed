@@ -239,6 +239,7 @@ def client_feed(api_key: str, domain: str):
     current_hour = now.hour
 
     # No posting between 12 AM and 6 AM
+    """
     if 0 <= current_hour < 6:
         if not breaking_articles:
 
@@ -265,6 +266,8 @@ def client_feed(api_key: str, domain: str):
         db.close()
 
         return response_data
+
+    """    
 
     # Calculate remaining active hours
     # Active posting window ends at 12 AM
