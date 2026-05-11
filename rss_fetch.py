@@ -51,3 +51,4 @@ def fetch_all_feeds():
 
     finally:
         db.close()
+        

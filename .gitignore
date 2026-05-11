@@ -1,11 +1,7 @@
 venv/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.Python
 .env
 .cache/
 .vscode/
 celerybeat-schedule
-

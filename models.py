@@ -54,3 +54,4 @@ class DeliveryLog(Base):
     delivered_at = Column(DateTime, default=datetime.now(IST))
 
 
+

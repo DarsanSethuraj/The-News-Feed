@@ -16,10 +16,8 @@ services:
     image: postgres:16
     restart: unless-stopped
 
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: newsdb
+    env_file:
+      - .env
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -41,6 +39,9 @@ services:
     build: .
     restart: unless-stopped
 
+    env_file:
+      - .env
+
     command: >
       sh -c "
       sleep 5 &&
@@ -59,13 +60,12 @@ services:
       redis:
         condition: service_started
 
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/newsdb
-      REDIS_URL: redis://redis:6379
-
   worker:
     build: .
     restart: unless-stopped
+
+    env_file:
+      - .env
 
     command: >
       sh -c "
@@ -82,13 +82,12 @@ services:
       redis:
         condition: service_started
 
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/newsdb
-      REDIS_URL: redis://redis:6379
-
   beat:
     build: .
     restart: unless-stopped
+
+    env_file:
+      - .env
 
     command: >
       sh -c "
@@ -104,11 +103,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/newsdb
-      REDIS_URL: redis://redis:6379
+        
 
 volumes:
   postgres_data:
   redis_data:
+  

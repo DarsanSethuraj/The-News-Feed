@@ -9,7 +9,11 @@ def trigger_client_wp_crons():
     db = SessionLocal()
 
     try:
-        clients = db.query(Client).all()
+        clients = (
+            db.query(Client)
+            .filter(Client.active == True)
+            .all()
+        )
 
         for client in clients:
             site_url = client.allowed_domain.rstrip("/")
@@ -17,6 +21,9 @@ def trigger_client_wp_crons():
             try:
                 response = requests.get(
                     f"{site_url}/wp-cron.php?doing_wp_cron",
+                    headers={
+                        "User-Agent": "NewsSaaS-Cron/1.0"
+                    },
                     timeout=15
                 )
 

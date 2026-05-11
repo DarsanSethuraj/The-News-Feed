@@ -3,11 +3,6 @@ from database import SessionLocal
 from models import Article, DeliveryLog
 from datetime import datetime, timedelta
 
-from zoneinfo import ZoneInfo
-
-IST = ZoneInfo("Asia/Kolkata")
-
-
 @celery.task
 def cleanup_old_data():
 
@@ -16,11 +11,11 @@ def cleanup_old_data():
     try:
 
         article_cutoff = (
-            datetime.now(IST) - timedelta(hours=24)
+            datetime.utcnow() - timedelta(hours=24)
         )
 
         log_cutoff = (
-            datetime.now(IST) - timedelta(hours=48)
+            datetime.utcnow() - timedelta(hours=48)
         )
 
         db.query(Article).filter(
