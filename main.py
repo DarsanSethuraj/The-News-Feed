@@ -477,9 +477,10 @@ def acknowledge_delivery(payload: DeliveryAckRequest):
 @app.get("/admin/clients")
 def client_dashboard(
     request: Request,
-    db: Session = Depends(get_db),
     username: str = Depends(verify_admin)
 ):
+    
+    db = SessionLocal()
 
     today_start = datetime.now(IST).replace(
         hour=0,
