@@ -532,8 +532,9 @@ def client_dashboard(
         })
 
     return templates.TemplateResponse(
-        "client_dashboard.html",
-        {
+        request=request,
+        name="client_dashboard.html",
+        context={
             "request": request,
             "dashboard_data": dashboard_data
         }
