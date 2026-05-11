@@ -349,20 +349,16 @@ def client_feed(api_key: str, domain: str):
 
     for article, publish_time in zip(articles, publish_times):
 
-        response_data = []
-
-        for article, publish_time in zip(articles, publish_times):
-
-            response_data.append({
-                "id": article.id,
-                "title": article.title,
-                "content": article.content,
-                "link": article.link,
-                "image_url": article.image_url,
-                "category": article.category,
-                "published_at": article.published_at,
-                "scheduled_publish_time": publish_time.isoformat(),
-            })
+        response_data.append({
+            "id": article.id,
+            "title": article.title,
+            "content": article.content,
+            "link": article.link,
+            "image_url": article.image_url,
+            "category": article.category,
+            "published_at": article.published_at,
+            "scheduled_publish_time": publish_time.isoformat(),
+        })
 
     db.close()
 
