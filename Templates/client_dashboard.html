@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #222;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .active {
+            color: green;
+            font-weight: bold;
+        }
+
+        .inactive {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Client Publishing Dashboard</h1>
+
+<table>
+    <tr>
+        <th>Client</th>
+        <th>Domain</th>
+        <th>Today's Posts</th>
+        <th>Daily Limit</th>
+        <th>Remaining</th>
+        <th>Last Article</th>
+        <th>Last Posted Time</th>
+        <th>Status</th>
+    </tr>
+
+    {% for item in dashboard_data %}
+    <tr>
+        <td>{{ item.client.name }}</td>
+        <td>{{ item.client.allowed_domain }}</td>
+        <td>{{ item.today_count }}</td>
+        <td>{{ item.client.daily_post_limit }}</td>
+        <td>{{ item.remaining }}</td>
+        <td>
+            {{ item.latest_article_title or "No posts yet" }}
+        </td>
+        <td>
+            {{ item.latest_delivery_time or "N/A" }}
+        </td>
+        <td>
+            {% if item.client.active %}
+                <span class="active">ACTIVE</span>
+            {% else %}
+                <span class="inactive">INACTIVE</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+</body>
+</html>
