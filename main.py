@@ -474,7 +474,7 @@ def acknowledge_delivery(payload: DeliveryAckRequest):
     finally:
         db.close()
 
-@app.get("/admin/clients", response_class=HTMLResponse)
+@app.get("/admin/clients")
 def client_dashboard(
     request: Request,
     db: Session = Depends(get_db),
