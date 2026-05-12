@@ -11,11 +11,11 @@ def cleanup_old_data():
     try:
 
         article_cutoff = (
-            datetime.utcnow() - timedelta(hours=24)
+            datetime.utcnow() - timedelta(hours=12)
         )
 
         log_cutoff = (
-            datetime.utcnow() - timedelta(hours=48)
+            datetime.utcnow() - timedelta(hours=24)
         )
 
         db.query(Article).filter(

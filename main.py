@@ -15,8 +15,10 @@ import secrets
 
 security = HTTPBasic()
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "darsan"  # In production, use environment variables or a secure vault
+import os
+
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 IST = ZoneInfo("Asia/Kolkata")
 
