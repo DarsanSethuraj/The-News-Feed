@@ -145,20 +145,16 @@ def client_feed(api_key: str, domain: str):
         db.close()
         return {"error": "Unauthorized domain"}
     
+    now = datetime.now(IST)
     # Cooldown / Rate Limiting for API requests
 
     
     cooldown = timedelta(minutes=15)
-    now = datetime.now(IST)
+    cooldown_now = datetime.now()
 
-    
     if client.last_feed_request:
-        last_request = client.last_feed_request
 
-        if last_request.tzinfo is None:
-            last_request = last_request.replace(tzinfo=IST)
-
-        elapsed = now - last_request
+        elapsed = cooldown_now - client.last_feed_request
 
         if elapsed < cooldown:
             remaining = cooldown - elapsed
@@ -166,8 +162,8 @@ def client_feed(api_key: str, domain: str):
             return {
                 "error": f"Feed requested too frequently. Retry after {remaining.seconds} seconds."
             }
-    
-    client.last_feed_request = now
+
+    client.last_feed_request = cooldown_now
     db.commit()
     
     # Calculate remaining quota for the day
