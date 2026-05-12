@@ -151,7 +151,7 @@ def client_feed(api_key: str, domain: str):
     cooldown = timedelta(minutes=15)
     now = datetime.now(IST)
 
-    """
+    
     if client.last_feed_request:
         last_request = client.last_feed_request
 
@@ -167,7 +167,7 @@ def client_feed(api_key: str, domain: str):
             return {
                 "error": f"Feed requested too frequently. Retry after {remaining.seconds} seconds."
             }
-    """
+    
     client.last_feed_request = now
     
 
