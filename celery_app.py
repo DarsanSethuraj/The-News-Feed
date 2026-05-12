@@ -22,9 +22,9 @@ celery.conf.beat_schedule = {
         "schedule": crontab(hour=3, minute=0) # every day at 3:00 AM IST
     },
 
-    "trigger-client-wp-crons-every-15-minutes": {
+    "trigger-client-wp-crons-every-25-minutes": {
         "task": "cron_trigger.trigger_client_wp_crons",
-        "schedule": crontab(minute="*/15"),
+        "schedule": crontab(minute="*/25"),
     },
 }
 
