@@ -163,14 +163,13 @@ def client_feed(api_key: str, domain: str):
         if elapsed < cooldown:
             remaining = cooldown - elapsed
 
-            db.close()
             return {
                 "error": f"Feed requested too frequently. Retry after {remaining.seconds} seconds."
             }
     
     client.last_feed_request = now
+    db.commit()
     
-
     # Calculate remaining quota for the day
 
     today_start = now.replace(
