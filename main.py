@@ -390,11 +390,15 @@ def admin_pending(
         datetime.utcnow() - timedelta(hours=4)
     )
 
+    articles = db.query(Article).all() # for testing
+
+    """
     articles = db.query(Article).filter(
         Article.status == "pending",
         Article.category != "Uncategorized",
         Article.created_at >= four_hours_ago
     ).all()
+    """
 
     db.close()
 
