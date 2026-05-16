@@ -387,7 +387,7 @@ def admin_pending(
     db = SessionLocal()
 
     four_hours_ago = (
-        datetime.now(IST) - timedelta(hours=4)
+        datetime.utcnow() - timedelta(hours=4)
     )
 
     articles = db.query(Article).filter(
