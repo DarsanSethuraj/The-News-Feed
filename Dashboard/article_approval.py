@@ -1,0 +1,40 @@
+from fastapi import APIRouter, Depends, Request
+from database import SessionLocal
+from models import Article
+from Authentication.admin_auth import verify_admin
+from datetime import datetime, timedelta
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="Templates")
+
+
+router = APIRouter()
+
+@router.get("/admin/pending")
+def admin_pending(
+    request: Request,
+    admin=Depends(verify_admin)
+):
+
+    db = SessionLocal()
+
+    four_hours_ago = (
+        datetime.utcnow() - timedelta(hours=4)
+    )
+
+    articles = db.query(Article).filter(
+        Article.status == "pending",
+        Article.category != "Uncategorized",
+        Article.created_at >= four_hours_ago
+    ).all()
+
+    db.close()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="pending_articles.html",
+        context={
+            "request": request,
+            "articles": articles
+        }
+    )
