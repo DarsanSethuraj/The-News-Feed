@@ -18,7 +18,7 @@ client = Client(
     name="Test Client",
     api_key="24c7cb6c062fed32036f72bdc0ccf10c",
     daily_post_limit=30,
-    subscribed_categories="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime,Uncategorized",
+    subscribed_categories="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime",
     allowed_domain="clientsite.com",
     active=True
 )
