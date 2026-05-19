@@ -51,8 +51,7 @@ services:
     ports:
       - "8000:8000"
 
-    volumes:
-      - .:/app
+    # deleted volumes for backend for good deployment
 
     depends_on:
       db:
@@ -108,4 +107,5 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  
   
