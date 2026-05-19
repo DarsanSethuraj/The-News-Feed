@@ -18,7 +18,7 @@ if not client:
     exit()
 
 client.daily_post_limit = 100
-client.subscribed_categories = "World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime,Uncategorized"
+client.subscribed_categories = "World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime"
 client.allowed_domain = "http://thenewsfeedin.local/"
 
 db.commit()
