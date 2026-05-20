@@ -25,7 +25,7 @@ def admin_pending(
     articles = db.query(Article).filter(
         Article.status == "pending",
         Article.category != "Uncategorized",
-        Article.created_at >= four_hours_ago
+        Article.published_at >= four_hours_ago
     ).all()
 
     db.close()
