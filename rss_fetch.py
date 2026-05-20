@@ -2,6 +2,7 @@ from celery_app import celery
 import feedparser
 from database import SessionLocal
 from models import Article
+from datetime import datetime
 
 from scraper import scrape_article
 
@@ -38,7 +39,8 @@ def fetch_all_feeds():
                         image_url=scraped["image_url"],
                         status="pending",
                         category=scraped["category"],
-                        author=scraped["author"]
+                        author=scraped["author"],
+                        created_at=datetime.now()
                     )
 
                     db.add(article)
