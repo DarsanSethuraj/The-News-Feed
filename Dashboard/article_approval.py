@@ -28,8 +28,6 @@ def admin_pending(
         Article.published_at >= four_hours_ago
     ).all()
 
-    db.close()
-
     return templates.TemplateResponse(
         request=request,
         name="pending_articles.html",
@@ -38,3 +36,5 @@ def admin_pending(
             "articles": articles
         }
     )
+
+    db.close()
