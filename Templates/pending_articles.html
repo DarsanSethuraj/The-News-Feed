@@ -6,6 +6,8 @@
 <body>
     <h1>Pending Articles</h1>
 
+    <h2>Matching Articles: {{ article_count }}</h2>
+
     {% for article in articles %}
         <div id="article-{{ article.id }}" style="
             border:1px solid #ccc;

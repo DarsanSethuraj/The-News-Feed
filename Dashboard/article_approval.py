@@ -19,28 +19,28 @@ def admin_pending(
 
     db = SessionLocal()
 
-    try:
+    four_hours_ago = (
+        datetime.utcnow() - timedelta(hours=4)
+    )
 
-        four_hours_ago = (
-            datetime.utcnow() - timedelta(hours=4)
-        )
+    articles = db.query(Article).filter(
+        Article.status == "pending",
+        Article.category != "Uncategorized",
+        Article.published_at >= four_hours_ago
+    ).all()
 
-        articles = db.query(Article).filter(
-            Article.status == "pending",
-            Article.category != "Uncategorized",
-            Article.published_at >= four_hours_ago
-        ).all()
+    article_count = len(articles)
 
-        print(f"ARTICLE COUNT: {len(articles)}")
-
-        return {
-            "count": len(articles),
-            "titles": [
-                article.title
-                for article in articles[:5]
-            ]
+    response = templates.TemplateResponse(
+        request=request,
+        name="pending_articles.html",
+        context={
+            "request": request,
+            "articles": articles,
+            "article_count": article_count
         }
+    )
 
-    finally:
-        db.close()
-        
+    db.close()
+
+    return response
