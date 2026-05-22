@@ -28,6 +28,10 @@ def admin_pending(
         Article.published_at >= four_hours_ago
     ).all()
 
+    db.close()
+
+    print("ARTICLE COUNT:", len(articles))
+
     return templates.TemplateResponse(
         request=request,
         name="pending_articles.html",
@@ -37,4 +41,4 @@ def admin_pending(
         }
     )
 
-    db.close()
+    
