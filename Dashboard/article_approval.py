@@ -10,6 +10,7 @@ templates = Jinja2Templates(directory="Templates")
 
 router = APIRouter()
 
+
 @router.get("/admin/pending")
 def admin_pending(
     request: Request,
@@ -18,27 +19,28 @@ def admin_pending(
 
     db = SessionLocal()
 
-    four_hours_ago = (
-        datetime.utcnow() - timedelta(hours=4)
-    )
+    try:
 
-    articles = db.query(Article).filter(
-        Article.status == "pending",
-        Article.category != "Uncategorized",
-        Article.published_at >= four_hours_ago
-    ).all()
+        four_hours_ago = (
+            datetime.utcnow() - timedelta(hours=4)
+        )
 
-    db.close()
+        articles = db.query(Article).filter(
+            Article.status == "pending",
+            Article.category != "Uncategorized",
+            Article.published_at >= four_hours_ago
+        ).all()
 
-    print("ARTICLE COUNT:", len(articles))
+        print(f"ARTICLE COUNT: {len(articles)}")
 
-    return templates.TemplateResponse(
-        request=request,
-        name="pending_articles.html",
-        context={
-            "request": request,
-            "articles": articles
+        return {
+            "count": len(articles),
+            "titles": [
+                article.title
+                for article in articles[:5]
+            ]
         }
-    )
 
-    
+    finally:
+        db.close()
+        
