@@ -15,11 +15,11 @@ from models import Client
 db = SessionLocal()
 
 client = Client(
-    name="Test Client",
-    api_key="24c7cb6c062fed32036f72bdc0ccf10c",
-    daily_post_limit=30,
+    name="News Feed Site",
+    api_key="f916e62c684b9121f2887da98a232c37",
+    daily_post_limit=50,
     subscribed_categories="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime",
-    allowed_domain="clientsite.com",
+    allowed_domain="https://thenewsfeeds.in/",
     active=True
 )
 
