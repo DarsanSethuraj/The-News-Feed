@@ -22,6 +22,8 @@ from Dashboard.client_dashboard import router as client_dashboard_router
 
 from Dashboard.article_approval import router as article_approval_router
 
+from Article_Management.update_article import router as update_article_router
+
 
 app = FastAPI()
 
@@ -46,5 +48,5 @@ app.include_router(ack_delivery_router)
 
 app.include_router(client_dashboard_router)
 
-
+app.include_router(update_article_router)
 
