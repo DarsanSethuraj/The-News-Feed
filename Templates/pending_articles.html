@@ -21,19 +21,87 @@
                 <img src="{{ article.image_url }}" width="300">
             {% endif %}
             
-            <p style="color: #5f0000; font-weight: 500;">
-                <strong style="color: #111;">Author:</strong> {{ article.author }}
-            </p>
-
-            <p><strong>Category:</strong> {{ article.category }}</p>
-
+            
             <div style="
-                line-height: 1.8;
-                font-size: 17px;
-                margin-top: 15px;
+                display:flex;
+                align-items:center;
+                gap:15px;
+                margin-top:10px;
+                margin-bottom:15px;
             ">
+
+                <p style="
+                    color:#5f0000;
+                    font-weight:500;
+                    margin:0;
+                ">
+                    <strong style="color:#111;">
+                        Author:
+                    </strong>
+
+                    {{ article.author }}
+                </p>
+
+                <p style="margin:0;">
+                    <strong>Category:</strong>
+                    {{ article.category }}
+                </p>
+
+                <button
+                    onclick="toggleEdit({{ article.id }})"
+                    style="
+                        width:36px;
+                        height:36px;
+                        border:none;
+                        border-radius:8px;
+                        background:#222;
+                        color:white;
+                        font-size:18px;
+                        cursor:pointer;
+                    "
+                >
+                    ✎
+                </button>
+
+            </div>
+
+            
+
+            <div
+                id="content-display-{{ article.id }}"
+                style="
+                    line-height:1.8;
+                    font-size:17px;
+                    margin-top:15px;
+                "
+            >
                 {{ article.content | safe }}
             </div>
+
+            <form
+                id="edit-form-{{ article.id }}"
+                method="POST"
+                action="/admin/update/{{ article.id }}"
+                style="display:none;"
+            >
+
+                <textarea
+                    name="content"
+                    rows="15"
+                    style="
+                        width:100%;
+                        margin-top:15px;
+                        font-size:16px;
+                    "
+                >{{ article.content }}</textarea>
+
+                <br><br>
+
+                <button type="submit">
+                    Save Changes
+                </button>
+
+            </form>
 
             <button onclick="moderateArticle({{ article.id }}, 'approve')">
                 Approve
@@ -87,6 +155,25 @@
                 const articleEl = document.getElementById("article-" + articleId);
                 articleEl.style.backgroundColor = "#fff3cd";
                 articleEl.style.borderColor = "#ff9800";
+            }
+        }
+
+        function toggleEdit(articleId) {
+
+            const form = document.getElementById(
+                "edit-form-" + articleId
+            );
+
+            if (form.style.display === "none") {
+
+                form.style.display = "block";
+
+            }
+
+            else {
+
+                form.style.display = "none";
+
             }
         }
 
