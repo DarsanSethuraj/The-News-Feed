@@ -19,14 +19,14 @@ def admin_pending(
 
     db = SessionLocal()
 
-    four_hours_ago = (
-        datetime.utcnow() - timedelta(hours=4)
+    two_hours_ago = (
+        datetime.utcnow() - timedelta(hours=2)
     )
 
     articles = db.query(Article).filter(
         Article.status == "pending",
         Article.category != "Uncategorized",
-        Article.published_at >= four_hours_ago
+        Article.published_at >= two_hours_ago
     ).all()
 
     article_count = len(articles)
