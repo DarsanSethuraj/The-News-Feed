@@ -6,6 +6,10 @@ from datetime import datetime
 
 from scraper import scrape_article
 
+from email.utils import parsedate_to_datetime
+from datetime import timezone
+
+
 FEEDS = [
     "https://www.asianetnews.com/rss",
     "https://www.madhyamam.com/feeds.xml"
@@ -30,11 +34,16 @@ def fetch_all_feeds():
                 
                 try:
                     scraped = scrape_article(entry.link)
+
+                    published_at = parsedate_to_datetime(
+                        entry.published
+                    ).astimezone(timezone.utc)
+
                     
                     article = Article(
                         title=scraped["title"],
                         link=entry.link,
-                        published_at=entry.get("published"),
+                        published_at=published_at,
                         content=scraped["content"],
                         image_url=scraped["image_url"],
                         status="pending",
