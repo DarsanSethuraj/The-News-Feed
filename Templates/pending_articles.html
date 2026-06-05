@@ -2,6 +2,12 @@
 <html>
 <head>
     <title>Pending Articles</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link
+        rel="stylesheet"
+        href="/static/css/pending.css"
+    >
 </head>
 <body>
     <h1>Pending Articles</h1>
@@ -9,26 +15,16 @@
     <h2>Matching Articles: {{ article_count }}</h2>
 
     {% for article in articles %}
-        <div id="article-{{ article.id }}" style="
-            border:1px solid #ccc;
-            padding:15px;
-            margin-bottom:20px;
-            transition: all 0.3s ease;
+        <div id="article-{{ article.id }}" class="article-card
         ">
             <h2>{{ article.title }}</h2>
 
             {% if article.image_url %}
-                <img src="{{ article.image_url }}" width="300">
+                <img src="{{ article.image_url }}" class="article-image">
             {% endif %}
             
             
-            <div style="
-                display:flex;
-                align-items:center;
-                gap:15px;
-                margin-top:10px;
-                margin-bottom:15px;
-            ">
+            <div class="meta-row">
 
                 <p style="
                     color:#5f0000;
@@ -49,16 +45,7 @@
 
                 <button
                     onclick="toggleEdit({{ article.id }})"
-                    style="
-                        width:36px;
-                        height:36px;
-                        border:none;
-                        border-radius:8px;
-                        background:#222;
-                        color:white;
-                        font-size:18px;
-                        cursor:pointer;
-                    "
+                    class="edit-btn"
                 >
                     ✎
                 </button>
@@ -142,7 +129,7 @@
 
             </form>
 
-            <div style="margin:10px 0;">
+            <div class="tier-row">
 
                 <label>
                     <input
@@ -170,28 +157,27 @@
 
             </div>
 
-            <div style="
-                margin-top:30px;
-            ">
+            <div class="action-row"
+            >
 
                 <button
                     onclick="approveArticle({{ article.id }})"
+                    class="action-btn approve-btn"
                 >
                     Approve
                 </button>
 
                 <button 
                     onclick="confirmBreaking({{ article.id }})"
-                    style="
-                        background:red;
-                        color:white;
-                        font-weight:bold;
-                    "
+                    class="action-btn breaking-btn"
                 >
                     BREAKING
                 </button>
 
-                <button onclick="moderateArticle({{ article.id }}, 'reject')">
+                <button 
+                    onclick="moderateArticle({{ article.id }}, 'reject')"
+                    class="action-btn reject-btn"
+                >
                     Reject
                 </button>
 
