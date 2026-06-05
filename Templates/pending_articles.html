@@ -142,11 +142,41 @@
 
             </form>
 
+            <div style="margin:10px 0;">
+
+                <label>
+                    <input
+                        type="checkbox"
+                        id="tier25-{{ article.id }}"
+                    >
+                    25
+                </label>
+
+                <label style="margin-left:15px;">
+                    <input
+                        type="checkbox"
+                        id="tier50-{{ article.id }}"
+                    >
+                    50
+                </label>
+
+                <label style="margin-left:15px;">
+                    <input
+                        type="checkbox"
+                        id="tier100-{{ article.id }}"
+                    >
+                    100
+                </label>
+
+            </div>
+
             <div style="
                 margin-top:30px;
             ">
 
-                <button onclick="moderateArticle({{ article.id }}, 'approve')">
+                <button
+                    onclick="approveArticle({{ article.id }})"
+                >
                     Approve
                 </button>
 
@@ -273,5 +303,62 @@
             }
         }
     </script>
+
+    <script>
+
+        async function approveArticle(articleId) {
+
+            const tiers = [];
+
+            if (
+                document.getElementById(
+                    `tier25-${articleId}`
+                ).checked
+            ) {
+                tiers.push(25);
+            }
+
+            if (
+                document.getElementById(
+                    `tier50-${articleId}`
+                ).checked
+            ) {
+                tiers.push(50);
+            }
+
+            if (
+                document.getElementById(
+                    `tier100-${articleId}`
+                ).checked
+            ) {
+                tiers.push(100);
+            }
+
+            const res = await fetch(
+                `/approve/${articleId}`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        tiers: tiers
+                    })
+                }
+            );
+
+            if(res.ok){
+
+                document
+                    .getElementById(
+                        `article-${articleId}`
+                    )
+                    .remove();
+            }
+        }
+
+        </script>
 </body>
 </html>

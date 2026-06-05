@@ -26,6 +26,10 @@ class Article(Base):
 
     is_breaking = Column(Boolean, default=False)
 
+    show_25 = Column(Boolean, default=False)
+    show_50 = Column(Boolean, default=False)
+    show_100 = Column(Boolean, default=False)
+
 class Client(Base):
     __tablename__ = "clients"
 

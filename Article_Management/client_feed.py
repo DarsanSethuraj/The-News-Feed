@@ -72,6 +72,19 @@ def client_feed(api_key: str, domain: str):
         .subquery()
     )
 
+    if client.daily_post_limit == 25:
+        tier_filter = Article.show_25 == True
+
+    elif client.daily_post_limit == 50:
+        tier_filter = Article.show_50 == True
+
+    elif client.daily_post_limit == 100:
+        tier_filter = Article.show_100 == True
+
+    else:
+        db.close()
+        return {"error": "Invalid client plan"}
+
     # Breaking news (bypasses quota)
 
     breaking_articles = (
@@ -186,6 +199,8 @@ def client_feed(api_key: str, domain: str):
         db.query(Article)
         .filter(
             Article.status == "approved",
+
+            tier_filter,
 
             Article.category.in_(allowed_categories),
 
