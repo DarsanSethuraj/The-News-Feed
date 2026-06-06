@@ -142,6 +142,7 @@
                             font-weight:bold;
                             font-size:22px;
                         "
+                        onclick="saveArticle({{ article.id }})"
                     >
                         Save Changes
                     </button>
@@ -357,6 +358,8 @@
 
         }
 
+        
+
         async function confirmBreaking(articleId) {
 
             const confirmed = confirm(
@@ -461,6 +464,42 @@
                         `article-${articleId}`
                     )
                     .remove();
+            }
+        }
+
+        </script>
+
+        <script>
+
+        async function saveArticle(articleId){
+
+            const content = document.getElementById(
+                `content-editor-${articleId}`
+            ).value;
+
+            const response = await fetch(
+                `/admin/update/${articleId}`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        content: content
+                    })
+                }
+            );
+
+            if(response.ok){
+
+                alert("Saved successfully");
+
+            }else{
+
+                alert("Save failed");
+
             }
         }
 
