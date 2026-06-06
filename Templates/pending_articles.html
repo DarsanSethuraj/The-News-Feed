@@ -110,8 +110,9 @@
                         📋 Copy Content
                     </button>
                 </div>
-                
+
                 <textarea
+                    id="content-editor-{{ article.id }}"
                     name="content"
                     rows="15"
                     style="
@@ -339,6 +340,21 @@
                 form.style.display = "none";
 
             }
+        }
+
+        function copyContent(articleId) {
+
+            const textarea = document.getElementById(
+                "content-editor-" + articleId
+            );
+
+            textarea.select();
+            textarea.setSelectionRange(0, 999999);
+
+            navigator.clipboard.writeText(
+                textarea.value
+            );
+
         }
 
         async function confirmBreaking(articleId) {
