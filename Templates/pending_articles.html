@@ -494,9 +494,14 @@
 
             if(response.ok){
 
-                alert("Saved successfully");
+                document.getElementById(
+                    `content-display-${articleId}`
+                ).innerHTML = content;
 
-            }else{
+                toggleEdit(articleId);
+            }
+
+            else{
 
                 alert("Save failed");
 

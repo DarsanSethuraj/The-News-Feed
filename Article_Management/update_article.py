@@ -1,6 +1,4 @@
-from fastapi import APIRouter, Depends, Form
-from fastapi.responses import RedirectResponse
-
+from fastapi import APIRouter, Depends
 from database import SessionLocal
 from models import Article
 from Authentication.admin_auth import verify_admin
@@ -8,10 +6,14 @@ from Authentication.admin_auth import verify_admin
 router = APIRouter()
 
 
+class ArticleUpdate(BaseModel):
+    content: str
+
+
 @router.post("/admin/update/{article_id}")
 def update_article(
     article_id: int,
-    content: str = Form(...),
+    data: ArticleUpdate,
     admin=Depends(verify_admin)
 ):
 
@@ -23,13 +25,9 @@ def update_article(
         db.close()
         return {"error": "Article not found"}
 
-    article.content = content
+    article.content = data.content
 
     db.commit()
-
     db.close()
 
-    return RedirectResponse(
-        url="/admin/pending",
-        status_code=303
-    )
+    return {"success": True}

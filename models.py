@@ -59,4 +59,7 @@ class DeliveryLog(Base):
     success = Column(Boolean, default=True)
     
 
+from pydantic import BaseModel
 
+class ArticleUpdate(BaseModel):
+    content: str
