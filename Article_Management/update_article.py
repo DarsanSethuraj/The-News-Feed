@@ -1,13 +1,9 @@
 from fastapi import APIRouter, Depends
 from database import SessionLocal
-from models import Article
+from models import Article, ArticleUpdate
 from Authentication.admin_auth import verify_admin
 
 router = APIRouter()
-
-
-class ArticleUpdate(BaseModel):
-    content: str
 
 
 @router.post("/admin/update/{article_id}")
