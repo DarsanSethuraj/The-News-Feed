@@ -27,6 +27,8 @@ def admin_pending(
         Article.status == "pending",
         Article.category != "Uncategorized",
         Article.published_at >= four_hour_ago
+    ).order_by(
+        Article.published_at.desc()
     ).all()
 
     article_count = len(articles)
