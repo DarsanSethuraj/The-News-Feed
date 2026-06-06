@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 
-from fastapi.staticfiles import StaticFiles
-
 
 
 from Article_Management.articles import router as articles_router
@@ -29,11 +27,6 @@ from Article_Management.update_article import router as update_article_router
 
 app = FastAPI()
 
-app.mount(
-    "/static",
-    StaticFiles(directory="Static"),
-    name="static"
-)
 
 app.include_router(articles_router)
 
