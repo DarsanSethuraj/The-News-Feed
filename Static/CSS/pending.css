@@ -1,26 +1,33 @@
 body {
-    font-family: Inter, Arial, sans-serif;
-    background: #f4f6f9;
-    padding: 30px;
-    max-width: 1200px;
-    margin: auto;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f3f4f6;
 }
 
 .article-card {
-    background: white;
-    border: none;
-    border-radius: 18px;
+    background: #ffffff;
+
+    border: 2px solid #e5e7eb;
+
+    border-radius: 16px;
+
     padding: 25px;
+
     margin-bottom: 30px;
 
     box-shadow:
-        0 8px 25px rgba(0,0,0,.08);
+        0 2px 10px rgba(0,0,0,0.05);
 
-    transition: .25s;
+    transition: all 0.3s ease;
 }
 
 .article-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,0.10);
+
+    border-color: #cbd5e1;
 }
 
 
