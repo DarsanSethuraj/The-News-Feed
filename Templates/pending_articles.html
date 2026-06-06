@@ -2,30 +2,33 @@
 <html>
 <head>
     <title>Pending Articles</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link
-        rel="stylesheet"
-        href="/static/css/pending.css"
-    >
 </head>
 <body>
-    <div class="dashboard-header">
-        <h1>News Moderation Panel</h1>
-        <p>{{ article_count }} Articles Awaiting Review</p>
-    </div>
+    <h1>Pending Articles</h1>
+
+    <h2>Matching Articles: {{ article_count }}</h2>
 
     {% for article in articles %}
-        <div id="article-{{ article.id }}" class="article-card
+        <div id="article-{{ article.id }}" style="
+            border:1px solid #ccc;
+            padding:15px;
+            margin-bottom:20px;
+            transition: all 0.3s ease;
         ">
             <h2>{{ article.title }}</h2>
 
             {% if article.image_url %}
-                <img src="{{ article.image_url }}" class="article-image">
+                <img src="{{ article.image_url }}" width="300">
             {% endif %}
             
             
-            <div class="meta-row">
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:15px;
+                margin-top:10px;
+                margin-bottom:15px;
+            ">
 
                 <p style="
                     color:#5f0000;
@@ -46,7 +49,16 @@
 
                 <button
                     onclick="toggleEdit({{ article.id }})"
-                    class="edit-btn"
+                    style="
+                        width:36px;
+                        height:36px;
+                        border:none;
+                        border-radius:8px;
+                        background:#222;
+                        color:white;
+                        font-size:18px;
+                        cursor:pointer;
+                    "
                 >
                     ✎
                 </button>
@@ -130,7 +142,7 @@
 
             </form>
 
-            <div class="tier-row">
+            <div style="margin:10px 0;">
 
                 <label>
                     <input
@@ -158,27 +170,28 @@
 
             </div>
 
-            <div class="action-row"
-            >
+            <div style="
+                margin-top:30px;
+            ">
 
                 <button
                     onclick="approveArticle({{ article.id }})"
-                    class="action-btn approve-btn"
                 >
                     Approve
                 </button>
 
                 <button 
                     onclick="confirmBreaking({{ article.id }})"
-                    class="action-btn breaking-btn"
+                    style="
+                        background:red;
+                        color:white;
+                        font-weight:bold;
+                    "
                 >
                     BREAKING
                 </button>
 
-                <button 
-                    onclick="moderateArticle({{ article.id }}, 'reject')"
-                    class="action-btn reject-btn"
-                >
+                <button onclick="moderateArticle({{ article.id }}, 'reject')">
                     Reject
                 </button>
 
