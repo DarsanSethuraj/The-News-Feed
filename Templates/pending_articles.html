@@ -88,7 +88,29 @@
                     margin-bottom:35px;
                 "
             >
-
+                <div style="
+                    display:flex;
+                    justify-content:flex-end;
+                    margin-bottom:10px;
+                ">
+                    <button
+                        type="button"
+                        onclick="copyContent({{ article.id }})"
+                        style="
+                            background:#007bff;
+                            color:white;
+                            border:none;
+                            padding:12px 24px;
+                            border-radius:8px;
+                            cursor:pointer;
+                            font-weight:bold;
+                            font-size:18px;
+                        "
+                    >
+                        📋 Copy Content
+                    </button>
+                </div>
+                
                 <textarea
                     name="content"
                     rows="15"
