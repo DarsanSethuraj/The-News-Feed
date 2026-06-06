@@ -176,6 +176,17 @@
 
                 <button
                     onclick="approveArticle({{ article.id }})"
+                    style="
+                        padding:15px 30px;
+                        font-size:18px;
+                        font-weight:bold;
+                        min-width:140px;
+                        border:none;
+                        border-radius:8px;
+                        cursor:pointer;
+                        background:#28a745;
+                        color:white;
+                    "
                 >
                     Approve
                 </button>
@@ -183,15 +194,34 @@
                 <button 
                     onclick="confirmBreaking({{ article.id }})"
                     style="
+                        padding:15px 30px;
+                        font-size:18px;
+                        font-weight:bold;
+                        min-width:140px;
+                        border:none;
+                        border-radius:8px;
+                        cursor:pointer;
                         background:red;
                         color:white;
-                        font-weight:bold;
                     "
                 >
                     BREAKING
                 </button>
 
-                <button onclick="moderateArticle({{ article.id }}, 'reject')">
+                <button 
+                    onclick="moderateArticle({{ article.id }}, 'reject')"
+                    style="
+                        padding:15px 30px;
+                        font-size:18px;
+                        font-weight:bold;
+                        min-width:140px;
+                        border:none;
+                        border-radius:8px;
+                        cursor:pointer;
+                        background:#555;
+                        color:white;
+                    "
+                >
                     Reject
                 </button>
 
