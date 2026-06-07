@@ -15,7 +15,9 @@
             margin-bottom:20px;
             transition: all 0.3s ease;
         ">
-            <h2>{{ article.title }}</h2>
+            <h2 id="title-display-{{ article.id }}">
+                {{ article.title }}
+            </h2>
 
             {% if article.image_url %}
                 <img src="{{ article.image_url }}" width="300">
@@ -110,6 +112,23 @@
                         📋 Copy Content
                     </button>
                 </div>
+                
+                <label>
+                    <strong>Title</strong>
+                </label>
+
+                <input
+                    id="title-editor-{{ article.id }}"
+                    type="text"
+                    value="{{ article.title }}"
+                    style="
+                        width:100%;
+                        padding:10px;
+                        font-size:20px;
+                        margin-bottom:15px;
+                        box-sizing:border-box;
+                    "
+                >
 
                 <textarea
                     id="content-editor-{{ article.id }}"
@@ -473,6 +492,10 @@
 
         async function saveArticle(articleId){
 
+            const title = document.getElementById(
+                `title-editor-${articleId}`
+            ).value;
+
             const content = document.getElementById(
                 `content-editor-${articleId}`
             ).value;
@@ -487,12 +510,17 @@
                     },
 
                     body: JSON.stringify({
+                        title: title,
                         content: content
                     })
                 }
             );
 
             if(response.ok){
+
+                document.getElementById(
+                    `title-display-${articleId}`
+                ).innerText = title;
 
                 document.getElementById(
                     `content-display-${articleId}`

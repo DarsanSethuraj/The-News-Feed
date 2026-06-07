@@ -62,4 +62,5 @@ class DeliveryLog(Base):
 from pydantic import BaseModel
 
 class ArticleUpdate(BaseModel):
+    title: str
     content: str

@@ -17,7 +17,7 @@ if not client:
     db.close()
     exit()
 
-client.active = True
+client.active = False
 
 db.commit()
 

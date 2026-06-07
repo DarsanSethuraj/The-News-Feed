@@ -21,6 +21,7 @@ def update_article(
         db.close()
         return {"error": "Article not found"}
 
+    article.title = data.title
     article.content = data.content
 
     db.commit()
