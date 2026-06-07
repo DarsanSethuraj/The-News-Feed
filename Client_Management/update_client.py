@@ -19,7 +19,7 @@ if not client:
 
 client.daily_post_limit = 25
 client.subscribed_categories = "World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime"
-client.allowed_domain = "http://thenewsfeedin.local/"
+client.allowed_domain = "https://thenewsfeeds.in/"
 
 db.commit()
 
