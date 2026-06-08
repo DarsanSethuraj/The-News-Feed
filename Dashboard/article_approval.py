@@ -31,6 +31,17 @@ def admin_pending(
         Article.published_at.desc()
     ).all()
 
+
+    now = datetime.utcnow()
+
+    for article in articles:
+
+        age = now - article.published_at
+
+        article.age_minutes = int(
+            age.total_seconds() / 60
+        )
+
     article_count = len(articles)
 
     response = templates.TemplateResponse(
