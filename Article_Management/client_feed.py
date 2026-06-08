@@ -30,7 +30,7 @@ def client_feed(api_key: str, domain: str):
     # Cooldown / Rate Limiting for API requests
 
     
-    cooldown = timedelta(minutes=15)
+    cooldown = timedelta(minutes=10)
     cooldown_now = datetime.now()
 
     if client.last_feed_request:
