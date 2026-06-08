@@ -17,7 +17,7 @@ if not client:
     db.close()
     exit()
 
-client.daily_post_limit = 25
+client.daily_post_limit = 50
 client.subscribed_categories = "World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime"
 client.allowed_domain = "https://thenewsfeeds.in/"
 
