@@ -67,7 +67,19 @@
 
             </div>
 
-            
+            <p style="
+                margin:10px 0;
+                font-size:16px;
+                font-weight:bold;
+                color:#d35400;
+            ">
+                
+                <span
+                    id="age-{{ article.id }}"
+                    data-published="{{ article.published_at.isoformat() }}"
+                >
+                </span>
+            </p>
 
             <div
                 id="content-display-{{ article.id }}"
@@ -429,6 +441,63 @@
                 articleEl.style.borderColor = "#ff9800";
             }
         }
+    </script>
+
+
+    <script>
+
+    function updateArticleAges() {
+
+        document.querySelectorAll("[id^='age-']").forEach(el => {
+
+            const published = new Date(
+                el.dataset.published
+            );
+
+            const now = new Date();
+
+            const diffMs = now - published;
+
+            const totalMinutes = Math.floor(
+                diffMs / (1000 * 60)
+            );
+
+            const hours = Math.floor(
+                totalMinutes / 60
+            );
+
+            const minutes = totalMinutes % 60;
+
+            el.textContent =
+                `${hours}h ${minutes}m ago`;
+
+            if (hours >= 3) {
+
+                el.style.color = "red";
+
+            }
+
+            else if (hours >= 1) {
+
+                el.style.color = "orange";
+
+            }
+
+            else {
+
+                el.style.color = "green";
+
+            }
+        });
+    }
+
+    updateArticleAges();
+
+    setInterval(
+        updateArticleAges,
+        60000
+    );
+
     </script>
 
     <script>
