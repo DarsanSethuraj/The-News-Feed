@@ -31,6 +31,7 @@ def client_feed(api_key: str, domain: str):
 
     
     cooldown = timedelta(minutes=5) # minimum time between feed requests
+    
     cooldown_now = datetime.now()
 
     if client.last_feed_request:
