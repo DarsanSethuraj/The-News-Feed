@@ -6,7 +6,7 @@ from models import Client
 # to update a client, run:
 # docker compose exec backend python -m Client_Management.update_client
 
-API_KEY = "5239f217dce3afa28945b3473c0ce20f" # replace with the actual API key of the client you want to update
+API_KEY = "f916e62c684b9121f2887da98a232c37" # replace with the actual API key of the client you want to update
 
 db = SessionLocal()
 
@@ -17,9 +17,9 @@ if not client:
     db.close()
     exit()
 
-client.daily_post_limit = 25
+client.daily_post_limit = 100
 client.subscribed_categories = "World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime"
-client.allowed_domain = "https://konnivartha.in/"
+client.allowed_domain = "https://thenewsfeeds.in/"
 
 db.commit()
 
