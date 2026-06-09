@@ -5,6 +5,27 @@ from models import Article, CreateArticleRequest
 from database import SessionLocal
 from datetime import datetime
 
+router = APIRouter()
+
+templates = Jinja2Templates(
+    directory="Templates"
+)
+
+@router.get("/admin/create-article-page")
+def create_article_page(
+    request: Request,
+    admin=Depends(verify_admin)
+):
+
+    return templates.TemplateResponse(
+        request=request,
+        name="create_article.html",
+        context={
+            "request": request
+        }
+    )
+
+
 @router.post("/admin/create-article")
 def create_article(
     data: CreateArticleRequest,
@@ -27,9 +48,7 @@ def create_article(
         )
 
         db.add(article)
-
         db.commit()
-
         db.refresh(article)
 
         return {
@@ -38,5 +57,4 @@ def create_article(
         }
 
     finally:
-
         db.close()
