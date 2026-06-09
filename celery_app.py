@@ -12,9 +12,9 @@ celery = Celery(
 celery.conf.timezone = "Asia/Kolkata"
 
 celery.conf.beat_schedule = {
-    "fetch-rss-every-15-minutes": {
+    "fetch-rss-every-10-minutes": {
         "task": "rss_fetch.fetch_all_feeds",
-        "schedule": 900.0,
+        "schedule": 600.0,
     },
 
     "cleanup-old-data-daily": {
@@ -22,9 +22,9 @@ celery.conf.beat_schedule = {
         "schedule": crontab(hour=3, minute=0) # every day at 3:00 AM IST
     },
 
-    "trigger-client-wp-crons-every-15-minutes": {
+    "trigger-client-wp-crons-every-10-minutes": {
         "task": "cron_trigger.trigger_client_wp_crons",
-        "schedule": crontab(minute="*/15"),
+        "schedule": crontab(minute="*/10"),
     },
 }
 

@@ -58,3 +58,4 @@ def create_article(
 
     finally:
         db.close()
+        
