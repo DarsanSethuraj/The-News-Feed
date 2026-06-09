@@ -31,7 +31,7 @@ def client_feed(api_key: str, domain: str):
 
     
     cooldown = timedelta(minutes=5) # minimum time between feed requests
-    
+
     cooldown_now = datetime.now()
 
     if client.last_feed_request:
@@ -126,128 +126,26 @@ def client_feed(api_key: str, domain: str):
         return response_data
 
 
-    current_hour = now.hour
-
-    # No posting between 12 AM and 6 AM
-    
-    if 0 <= current_hour < 6:
-        if not breaking_articles:
-
-            db.commit()
-            db.close()
-
-            return []
-
-        response_data = [
-            {
-                "id": article.id,
-                "title": article.title,
-                "content": article.content,
-                "link": article.link,
-                "image_url": article.image_url,
-                "category": article.category,
-                "published_at": article.published_at,
-                "scheduled_publish_time": now.isoformat(),
-            }
-            for article in breaking_articles
-        ]
-
-        db.commit()
-        db.close()
-
-        return response_data
-
-    
-
-    # Calculate remaining active hours
-    # Active posting window ends at 12 AM
-    # Posting allowed only from 6 AM to 12 AM
-
-    hours_remaining = max(
-        1,
-        24 - current_hour
-    )
-
-    # Remove non-posting hours (12 AM - 6 AM)
-    if current_hour < 24:
-
-        inactive_hours_remaining = 6
-
-        hours_remaining -= inactive_hours_remaining
-
-    hours_remaining = max(1, hours_remaining)
-
-    posts_per_hour = remaining_quota / hours_remaining
-
-    # Prime time boost
-    if 18 <= current_hour < 22:
-
-        posts_per_hour *= 1.8
-
-    articles_to_release = max(
-        1 if remaining_quota > 0 else 0,
-        math.ceil(posts_per_hour)
-    )
-
-    if articles_to_release <= 0:
-
-        db.commit()
-        db.close()
-
-        return []
-
     normal_articles = (
         db.query(Article)
         .filter(
             Article.status == "approved",
-
             tier_filter,
-
             Article.category.in_(allowed_categories),
-
             Article.created_at >= client.activated_at,
-
-            Article.created_at >= today_start,
-
+            Article.is_breaking == False,
             ~Article.id.in_(delivered_subquery)
         )
-        .order_by(Article.created_at.desc())
-        .limit(articles_to_release)
+        .order_by(Article.created_at.asc())
+        .limit(remaining_quota)
         .all()
     )
 
     articles = breaking_articles + normal_articles
 
-    publish_times = []
-
-    base_time = now
-
-    spacing_minutes = max(
-        10,
-        int((hours_remaining * 60) / max(1, articles_to_release))
-    )
-
-    for i in range(len(articles)):
-
-        publish_time = base_time + timedelta(
-            minutes=i * spacing_minutes
-        )
-
-        # No publishing between 12 AM and 6 AM
-        if 0 <= publish_time.hour < 6:
-
-            publish_time = publish_time.replace(
-                hour=6,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-
-        publish_times.append(publish_time)
-
     response_data = []
 
-    for article, publish_time in zip(articles, publish_times):
+    for article in articles:
 
         response_data.append({
             "id": article.id,
@@ -257,7 +155,7 @@ def client_feed(api_key: str, domain: str):
             "image_url": article.image_url,
             "category": article.category,
             "published_at": article.published_at,
-            "scheduled_publish_time": publish_time.isoformat(),
+            "scheduled_publish_time": now.isoformat(),
         })
 
     db.close()
