@@ -8,6 +8,28 @@
 
     <h2>Matching Articles: {{ article_count }}</h2>
 
+    <button
+        onclick="window.location.href='/admin/create-article-page'"
+        style="
+        background:#007bff;
+        color:white;
+        border:none;
+        padding:12px 24px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+        margin-bottom:20px;
+        "
+
+        >
+
+        ```
+        ➕ Create Article
+        ```
+
+    </button>
+
+
     {% for article in articles %}
         <div id="article-{{ article.id }}" style="
             border:1px solid #ccc;

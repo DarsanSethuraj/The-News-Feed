@@ -64,3 +64,12 @@ from pydantic import BaseModel
 class ArticleUpdate(BaseModel):
     title: str
     content: str
+
+
+
+class CreateArticleRequest(BaseModel):
+    title: str
+    content: str
+    category: str
+    slug: str
+    image_url: str | None = None
