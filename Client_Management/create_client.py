@@ -15,11 +15,11 @@ from models import Client
 db = SessionLocal()
 
 client = Client(
-    name="Konni Vartha",
-    api_key="5239f217dce3afa28945b3473c0ce20f",
+    name="WordPress Playground",
+    api_key="dc11f6aa715daf48a2014c88fa612df4",
     daily_post_limit=50,
     subscribed_categories="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime",
-    allowed_domain="https://konnivartha.in/",
+    allowed_domain="https://playground.wordpress.net/",
     active=True
 )
 
