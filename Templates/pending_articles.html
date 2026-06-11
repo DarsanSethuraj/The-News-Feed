@@ -45,6 +45,16 @@
                 <img src="{{ article.image_url }}" width="300">
             {% endif %}
             
+            <p>
+                <strong>Image URL:</strong>
+                <a
+                    href="{{ article.image_url }}"
+                    target="_blank"
+                    style="word-break: break-all;"
+                >
+                    {{ article.image_url }}
+                </a>
+            </p>
             
             <div style="
                 display:flex;
