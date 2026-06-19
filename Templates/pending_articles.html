@@ -406,16 +406,25 @@
 
         function copyContent(articleId) {
 
-            const textarea = document.getElementById(
+            const titleInput = document.getElementById(
+                "title-editor-" + articleId
+            );
+
+            const contentTextarea = document.getElementById(
                 "content-editor-" + articleId
             );
 
-            textarea.select();
-            textarea.setSelectionRange(0, 999999);
+            const text =
+        `Title: ${titleInput.value}
 
-            navigator.clipboard.writeText(
-                textarea.value
-            );
+        Content:
+        ${contentTextarea.value}`;
+
+            navigator.clipboard.writeText(text);
+
+            // Clear the edit fields
+            titleInput.value = "";
+            contentTextarea.value = "";
 
         }
 
