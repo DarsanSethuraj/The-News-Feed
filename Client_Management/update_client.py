@@ -20,7 +20,7 @@ if not client:
 client.name = "Business 100 News"
 client.daily_post_limit = 25
 client.subscribed_categories = "World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime"
-client.allowed_domain = "https://business100news.com/"
+client.allowed_domain = "https://malayalam.business100news.com/"
 
 db.commit()
 
