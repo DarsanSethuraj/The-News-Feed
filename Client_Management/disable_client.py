@@ -6,7 +6,7 @@ from models import Client
 # to disable a client, run:
 # docker compose exec backend python -m Client_Management.disable_client
 
-API_KEY = "dc11f6aa715daf48a2014c88fa612df4" # replace with the actual API key of the client you want to disable
+API_KEY = "11a9798f0ff700d7fbcc47bd75c88384" # replace with the actual API key of the client you want to disable
 
 db = SessionLocal()
 

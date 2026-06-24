@@ -4,6 +4,7 @@ import json
 
 import Scrapers.asianet_scraper
 import Scrapers.madhyamam_scraper
+import Scrapers.news18_scraper
 
 
 BANNED_PHRASES = [
@@ -16,6 +17,7 @@ BANNED_PHRASES = [
 SCRAPER_REGISTRY = {
     "asianetnews.com": Scrapers.asianet_scraper.asianet_scraper,
     "madhyamam.com": Scrapers.madhyamam_scraper.madhyamam_scraper,
+    "malayalam.news18.com": Scrapers.news18_scraper.news18_scraper
 }
 
 def scrape_article(url: str):

@@ -15,7 +15,7 @@ from models import Client
 db = SessionLocal()
 
 client = Client(
-    name="WordPress Playground",
+    name="Business 100 News",
     api_key="11a9798f0ff700d7fbcc47bd75c88384",
     daily_post_limit=25,
     subscribed_categories="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime",

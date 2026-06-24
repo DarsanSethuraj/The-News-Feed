@@ -62,7 +62,7 @@ BANNED_PHRASES = [
     "ഏഷ്യാനെറ്റ്",
     ]
 
-def asianet_scraper(url: str):
+def news18_scraper(url: str):
 
     if "video" in url or "/gallery/" in url or "/gulfroundup-program/" in url or "/webstories/" in url:
         raise Exception("Skipping video/gallery link")    
