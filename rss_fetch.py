@@ -12,7 +12,7 @@ from datetime import timezone
 
 FEEDS = [
     "https://www.asianetnews.com/rss",
-    "https://www.madhyamam.com/feeds.xml"
+    "https://www.madhyamam.com/feeds.xml",
     "https://malayalam.news18.com/commonfeeds/v1/mal/rss/money.xml"
 ]
 
