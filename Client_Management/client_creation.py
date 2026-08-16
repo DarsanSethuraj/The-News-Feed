@@ -126,6 +126,7 @@ def client_management_page(
 
         .active-box {
             margin-top: 15px;
+            margin-bottom: 25px;
         }
 
 
