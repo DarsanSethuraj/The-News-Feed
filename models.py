@@ -80,8 +80,8 @@ from typing import List
 
 class ClientCreate(BaseModel):
     name: str
+    api_key: str | None = None
     allowed_domain: str
     daily_post_limit: int
     subscribed_categories: List[str]
     active: bool = True
-
