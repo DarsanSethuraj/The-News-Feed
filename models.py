@@ -73,3 +73,12 @@ class CreateArticleRequest(BaseModel):
     category: str
     slug: str
     image_url: str | None = None
+
+
+class ClientCreate(BaseModel):
+    name: str
+    allowed_domain: str
+    daily_post_limit: int
+    subscribed_categories: List[str]
+    active: bool = True
+

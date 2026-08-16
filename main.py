@@ -26,7 +26,7 @@ from Article_Management.update_article import router as update_article_router
 
 from Dashboard.create_article import router as create_article_router
 
-
+from Client_Management.client_creation import router as client_management_router
 
 app = FastAPI()
 
@@ -53,5 +53,6 @@ app.include_router(client_dashboard_router)
 
 app.include_router(update_article_router)
 
-
 app.include_router(create_article_router)
+
+app.include_router(client_management_router)
