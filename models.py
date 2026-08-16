@@ -4,6 +4,7 @@ from datetime import datetime
 
 from zoneinfo import ZoneInfo
 
+
 IST = ZoneInfo("Asia/Kolkata")
 
 
@@ -74,6 +75,8 @@ class CreateArticleRequest(BaseModel):
     slug: str
     image_url: str | None = None
 
+
+from typing import List
 
 class ClientCreate(BaseModel):
     name: str
