@@ -28,7 +28,7 @@ from Dashboard.create_article import router as create_article_router
 
 from Client_Management.client_creation import router as client_management_router
 
-from Client_Management.edit_client import router as edit_client_router
+from Client_Management.client_edit import router as edit_client_router
 
 
 app = FastAPI()
