@@ -7,11 +7,13 @@ from fastapi import (
 
 from database import SessionLocal
 from models import Article
+
 from Authentication.admin_auth import verify_admin
 
 from datetime import datetime, timedelta
 
 from fastapi.templating import Jinja2Templates
+
 from pydantic import BaseModel
 
 
@@ -24,7 +26,7 @@ router = APIRouter()
 
 
 # ---------------------------------------------------------
-# Article update request
+# Article update model
 # ---------------------------------------------------------
 
 class ArticleUpdate(BaseModel):
@@ -32,6 +34,7 @@ class ArticleUpdate(BaseModel):
     title: str
     content: str
     category: str
+    image_url: str
 
 
 # ---------------------------------------------------------
@@ -127,12 +130,11 @@ def admin_pending(
 # ---------------------------------------------------------
 # Update article
 #
-# Used by the Edit button on pending_articles.html
-#
 # Updates:
 # - title
 # - content
 # - category
+# - image URL
 # ---------------------------------------------------------
 
 @router.post("/admin/update/{article_id}")
@@ -163,11 +165,12 @@ def update_article(
             )
 
 
-        # ---------------------------------------------
+        # -------------------------------------------------
         # Validate title
-        # ---------------------------------------------
+        # -------------------------------------------------
 
         title = article_data.title.strip()
+
 
         if not title:
 
@@ -177,11 +180,12 @@ def update_article(
             )
 
 
-        # ---------------------------------------------
+        # -------------------------------------------------
         # Validate content
-        # ---------------------------------------------
+        # -------------------------------------------------
 
         content = article_data.content
+
 
         if not content.strip():
 
@@ -191,9 +195,9 @@ def update_article(
             )
 
 
-        # ---------------------------------------------
+        # -------------------------------------------------
         # Validate category
-        # ---------------------------------------------
+        # -------------------------------------------------
 
         category = article_data.category.strip()
 
@@ -206,15 +210,24 @@ def update_article(
             )
 
 
-        # ---------------------------------------------
-        # Update article
-        # ---------------------------------------------
+        # -------------------------------------------------
+        # Image URL
+        # -------------------------------------------------
+
+        image_url = article_data.image_url.strip()
+
+
+        # -------------------------------------------------
+        # Update database
+        # -------------------------------------------------
 
         article.title = title
 
         article.content = content
 
         article.category = category
+
+        article.image_url = image_url
 
 
         db.commit()
@@ -225,11 +238,13 @@ def update_article(
         return {
             "success": True,
             "message": "Article updated successfully",
+
             "article": {
                 "id": article.id,
                 "title": article.title,
                 "content": article.content,
-                "category": article.category
+                "category": article.category,
+                "image_url": article.image_url
             }
         }
 
