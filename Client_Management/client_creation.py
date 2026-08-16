@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from typing import List
 from database import SessionLocal
 from models import Client
 from Authentication.admin_auth import verify_admin
-import secrets
 from models import ClientCreate
+import secrets
 
 
 router = APIRouter(
@@ -44,6 +42,7 @@ def client_management_page(
         * {
             box-sizing: border-box;
         }
+
 
         body {
             margin: 0;
@@ -96,6 +95,14 @@ def client_management_page(
         }
 
 
+        .help-text {
+            display: block;
+            margin-top: 6px;
+            font-size: 13px;
+            color: #666;
+        }
+
+
         .categories {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -135,6 +142,12 @@ def client_management_page(
 
         button:hover {
             opacity: 0.85;
+        }
+
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
 
@@ -180,6 +193,7 @@ def client_management_page(
                 padding: 15px;
             }
 
+
             .categories {
                 grid-template-columns: 1fr 1fr;
             }
@@ -201,6 +215,8 @@ def client_management_page(
         <h1>Add New Client</h1>
 
 
+        <!-- Client Name -->
+
         <div class="field">
 
             <label class="title">
@@ -216,6 +232,30 @@ def client_management_page(
         </div>
 
 
+        <!-- API Key -->
+
+        <div class="field">
+
+            <label class="title">
+                API Key
+            </label>
+
+            <input
+                type="text"
+                id="api_key"
+                placeholder="Enter API key"
+            >
+
+            <span class="help-text">
+                Enter an API key manually.
+                Leave empty to generate one automatically.
+            </span>
+
+        </div>
+
+
+        <!-- Domain -->
+
         <div class="field">
 
             <label class="title">
@@ -230,6 +270,8 @@ def client_management_page(
 
         </div>
 
+
+        <!-- Daily Limit -->
 
         <div class="field">
 
@@ -247,6 +289,8 @@ def client_management_page(
         </div>
 
 
+        <!-- Categories -->
+
         <div class="field">
 
             <label class="title">
@@ -256,90 +300,121 @@ def client_management_page(
 
             <div class="categories">
 
+
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="World"
                     >
+
                     World
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="India"
                     >
+
                     India
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Kerala"
                     >
+
                     Kerala
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Entertainment"
                     >
+
                     Entertainment
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Gulf"
                     >
+
                     Gulf
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Tech"
                     >
+
                     Tech
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Sports"
                     >
+
                     Sports
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Crime"
                     >
+
                     Crime
+
                 </label>
 
 
                 <label class="category">
+
                     <input
                         type="checkbox"
                         value="Uncategorized"
                     >
+
                     Uncategorized
+
                 </label>
+
 
             </div>
 
         </div>
 
+
+        <!-- Active -->
 
         <div class="active-box">
 
@@ -358,12 +433,16 @@ def client_management_page(
         </div>
 
 
-        <button onclick="createClient()">
+        <button
+            id="create-button"
+            onclick="createClient()"
+        >
             Create Client
         </button>
 
 
         <div id="result"></div>
+
 
     </div>
 
@@ -377,16 +456,29 @@ def client_management_page(
 async function createClient() {
 
 
+    const button =
+        document.getElementById("create-button");
+
+
     const name =
-        document.getElementById("name")
-        .value
-        .trim();
+        document
+            .getElementById("name")
+            .value
+            .trim();
+
+
+    const apiKey =
+        document
+            .getElementById("api_key")
+            .value
+            .trim();
 
 
     const domain =
-        document.getElementById("domain")
-        .value
-        .trim();
+        document
+            .getElementById("domain")
+            .value
+            .trim();
 
 
     const dailyLimit =
@@ -413,9 +505,15 @@ async function createClient() {
         );
 
 
+    // -----------------------------------------------------
+    // Validation
+    // -----------------------------------------------------
+
     if (!name) {
 
-        alert("Please enter the client name.");
+        alert(
+            "Please enter the client name."
+        );
 
         return;
     }
@@ -423,7 +521,9 @@ async function createClient() {
 
     if (!domain) {
 
-        alert("Please enter the client domain.");
+        alert(
+            "Please enter the client domain."
+        );
 
         return;
     }
@@ -431,7 +531,9 @@ async function createClient() {
 
     if (!dailyLimit || dailyLimit < 1) {
 
-        alert("Please enter a valid daily post limit.");
+        alert(
+            "Please enter a valid daily post limit."
+        );
 
         return;
     }
@@ -439,120 +541,256 @@ async function createClient() {
 
     if (categories.length === 0) {
 
-        alert("Please select at least one category.");
+        alert(
+            "Please select at least one category."
+        );
 
         return;
     }
 
 
-    const response = await fetch(
-        "/admin/add_client",
-        {
-            method: "POST",
+    // -----------------------------------------------------
+    // Disable button while creating
+    // -----------------------------------------------------
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+    button.disabled = true;
 
-            body: JSON.stringify({
+    button.innerText = "Creating...";
 
-                name: name,
 
-                allowed_domain: domain,
+    try {
 
-                daily_post_limit: dailyLimit,
 
-                subscribed_categories: categories,
+        const response =
+            await fetch(
+                "/admin/add_client",
+                {
 
-                active: active
+                    method: "POST",
 
-            })
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        name: name,
+
+                        api_key:
+                            apiKey || null,
+
+                        allowed_domain:
+                            domain,
+
+                        daily_post_limit:
+                            dailyLimit,
+
+                        subscribed_categories:
+                            categories,
+
+                        active:
+                            active
+
+                    })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        const result =
+            document.getElementById("result");
+
+
+        result.style.display = "block";
+
+
+        // -------------------------------------------------
+        // Error
+        // -------------------------------------------------
+
+        if (!response.ok) {
+
+            result.className = "error";
+
+            result.innerHTML =
+                "<strong>Error:</strong> " +
+                (
+                    data.detail ||
+                    "Failed to create client."
+                );
+
+            return;
         }
-    );
 
 
-    const data = await response.json();
+        // -------------------------------------------------
+        // Success
+        // -------------------------------------------------
+
+        result.className = "success";
 
 
-    const result =
-        document.getElementById("result");
+        result.innerHTML = `
+
+            <strong>
+                Client created successfully.
+            </strong>
+
+            <p>
+                <strong>Client:</strong>
+                ${escapeHtml(data.name)}
+            </p>
+
+            <p>
+                <strong>Domain:</strong>
+                ${escapeHtml(data.allowed_domain)}
+            </p>
+
+            <p>
+                <strong>API Key:</strong>
+            </p>
+
+            <div
+                class="api-key"
+                id="generated-api-key"
+            >
+                ${escapeHtml(data.api_key)}
+            </div>
+
+            <button
+                class="copy-button"
+                onclick="copyApiKey()"
+            >
+                Copy API Key
+            </button>
+
+            <p>
+                Save this API key.
+                It is required by the client's
+                WordPress plugin.
+            </p>
+
+        `;
 
 
-    result.style.display = "block";
+        // Clear form
+
+        document
+            .getElementById("name")
+            .value = "";
 
 
-    if (!response.ok) {
+        document
+            .getElementById("api_key")
+            .value = "";
+
+
+        document
+            .getElementById("domain")
+            .value = "";
+
+
+        document
+            .getElementById("daily_limit")
+            .value = "25";
+
+
+        document
+            .getElementById("active")
+            .checked = true;
+
+
+        document
+            .querySelectorAll(
+                '.category input[type="checkbox"]'
+            )
+            .forEach(
+                checkbox => {
+                    checkbox.checked = false;
+                }
+            );
+
+
+    }
+
+    catch (error) {
+
+        const result =
+            document.getElementById("result");
+
+
+        result.style.display = "block";
 
         result.className = "error";
 
         result.innerHTML =
             "<strong>Error:</strong> " +
-            (data.detail || "Failed to create client.");
+            "Could not connect to the server.";
 
-        return;
     }
 
+    finally {
 
-    result.className = "success";
+        button.disabled = false;
 
+        button.innerText = "Create Client";
 
-    result.innerHTML = `
-
-        <strong>Client created successfully.</strong>
-
-        <p>
-            <strong>Client:</strong>
-            ${data.name}
-        </p>
-
-        <p>
-            <strong>Domain:</strong>
-            ${data.allowed_domain}
-        </p>
-
-        <p>
-            <strong>API Key:</strong>
-        </p>
-
-        <div class="api-key" id="generated-api-key">
-            ${data.api_key}
-        </div>
-
-        <button
-            class="copy-button"
-            onclick="copyApiKey()"
-        >
-            Copy API Key
-        </button>
-
-        <p>
-            Save this API key. It will be required
-            by the client's WordPress plugin.
-        </p>
-
-    `;
-
-
-    document.getElementById("name").value = "";
-
-    document.getElementById("domain").value = "";
+    }
 
 }
 
 
 
+// ---------------------------------------------------------
+// Copy API key
+// ---------------------------------------------------------
+
 function copyApiKey() {
 
-    const key =
+
+    const keyElement =
         document.getElementById(
             "generated-api-key"
-        ).innerText;
+        );
 
 
-    navigator.clipboard.writeText(key);
+    if (!keyElement) {
+        return;
+    }
 
 
-    alert("API key copied.");
+    const key =
+        keyElement.innerText;
+
+
+    navigator.clipboard
+        .writeText(key)
+        .then(
+            () => {
+                alert("API key copied.");
+            }
+        );
+
+}
+
+
+
+// ---------------------------------------------------------
+// Escape HTML
+// ---------------------------------------------------------
+
+function escapeHtml(value) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent = value;
+
+    return div.innerHTML;
 
 }
 
@@ -580,7 +818,15 @@ def create_client(
 
     try:
 
-        name = client_data.name.strip()
+        # -------------------------------------------------
+        # Clean input
+        # -------------------------------------------------
+
+        name = (
+            client_data.name
+            .strip()
+        )
+
 
         domain = (
             client_data.allowed_domain
@@ -588,9 +834,14 @@ def create_client(
             .lower()
             .replace("https://", "")
             .replace("http://", "")
+            .replace("www.", "")
             .strip("/")
         )
 
+
+        # -------------------------------------------------
+        # Validate name
+        # -------------------------------------------------
 
         if not name:
 
@@ -600,6 +851,10 @@ def create_client(
             )
 
 
+        # -------------------------------------------------
+        # Validate domain
+        # -------------------------------------------------
+
         if not domain:
 
             raise HTTPException(
@@ -608,23 +863,39 @@ def create_client(
             )
 
 
+        # -------------------------------------------------
+        # Validate daily limit
+        # -------------------------------------------------
+
         if client_data.daily_post_limit < 1:
 
             raise HTTPException(
                 status_code=400,
-                detail="Daily post limit must be at least 1."
+                detail=(
+                    "Daily post limit "
+                    "must be at least 1."
+                )
             )
 
+
+        # -------------------------------------------------
+        # Validate categories
+        # -------------------------------------------------
 
         if not client_data.subscribed_categories:
 
             raise HTTPException(
                 status_code=400,
-                detail="At least one category must be selected."
+                detail=(
+                    "At least one category "
+                    "must be selected."
+                )
             )
 
 
+        # -------------------------------------------------
         # Check duplicate domain
+        # -------------------------------------------------
 
         existing_client = (
             db.query(Client)
@@ -639,16 +910,72 @@ def create_client(
 
             raise HTTPException(
                 status_code=400,
-                detail="A client with this domain already exists."
+                detail=(
+                    "A client with this "
+                    "domain already exists."
+                )
             )
 
 
-        # Generate API key
+        # -------------------------------------------------
+        # API KEY
+        #
+        # If user entered one -> use it.
+        #
+        # If empty -> generate one.
+        # -------------------------------------------------
 
-        api_key = secrets.token_hex(16)
+        if client_data.api_key:
+
+            api_key = (
+                client_data.api_key
+                .strip()
+            )
+
+        else:
+
+            api_key = secrets.token_hex(16)
 
 
+        # -------------------------------------------------
+        # Validate API key
+        # -------------------------------------------------
+
+        if not api_key:
+
+            raise HTTPException(
+                status_code=400,
+                detail="API key cannot be empty."
+            )
+
+
+        # -------------------------------------------------
+        # Check duplicate API key
+        # -------------------------------------------------
+
+        existing_api_key = (
+            db.query(Client)
+            .filter(
+                Client.api_key == api_key
+            )
+            .first()
+        )
+
+
+        if existing_api_key:
+
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "This API key is already "
+                    "assigned to another client."
+                )
+            )
+
+
+        # -------------------------------------------------
         # Create client
+        # -------------------------------------------------
 
         client = Client(
 
@@ -658,13 +985,15 @@ def create_client(
 
             allowed_domain=domain,
 
-            daily_post_limit=
-                client_data.daily_post_limit,
+            daily_post_limit=(
+                client_data.daily_post_limit
+            ),
 
-            subscribed_categories=
+            subscribed_categories=(
                 ",".join(
                     client_data.subscribed_categories
-                ),
+                )
+            ),
 
             active=client_data.active
 
@@ -677,6 +1006,10 @@ def create_client(
 
         db.refresh(client)
 
+
+        # -------------------------------------------------
+        # Return result
+        # -------------------------------------------------
 
         return {
 
