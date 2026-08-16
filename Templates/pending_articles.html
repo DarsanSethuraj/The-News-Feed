@@ -3,85 +3,129 @@
 <head>
     <title>Pending Articles</title>
 </head>
+
 <body>
+
     <h1>Pending Articles</h1>
 
     <h2>Matching Articles: {{ article_count }}</h2>
 
+
     <button
         onclick="window.location.href='/admin/create-article-page'"
         style="
-        background:#007bff;
-        color:white;
-        border:none;
-        padding:12px 24px;
-        border-radius:8px;
-        cursor:pointer;
-        font-weight:bold;
-        margin-bottom:20px;
+            background:#007bff;
+            color:white;
+            border:none;
+            padding:12px 24px;
+            border-radius:8px;
+            cursor:pointer;
+            font-weight:bold;
+            margin-bottom:20px;
         "
-
-        >
-
-        ```
+    >
         ➕ Create Article
-        ```
-
     </button>
 
 
     {% for article in articles %}
-        <div id="article-{{ article.id }}" style="
-            border:1px solid #ccc;
-            padding:15px;
-            margin-bottom:20px;
-            transition: all 0.3s ease;
-        ">
+
+        <div
+            id="article-{{ article.id }}"
+            style="
+                border:1px solid #ccc;
+                padding:15px;
+                margin-bottom:20px;
+                transition:all 0.3s ease;
+            "
+        >
+
+            <!-- TITLE -->
+
             <h2 id="title-display-{{ article.id }}">
                 {{ article.title }}
             </h2>
 
+
+            <!-- IMAGE -->
+
             {% if article.image_url %}
-                <img src="{{ article.image_url }}" width="900">
+
+                <img
+                    src="{{ article.image_url }}"
+                    width="900"
+                >
+
             {% endif %}
-            
+
+
+            <!-- IMAGE URL -->
+
             <p>
+
                 <strong>Image URL:</strong>
+
                 <a
                     href="{{ article.image_url }}"
                     target="_blank"
-                    style="word-break: break-all;"
+                    style="word-break:break-all;"
                 >
                     {{ article.image_url }}
                 </a>
-            </p>
-            
-            <div style="
-                display:flex;
-                align-items:center;
-                gap:15px;
-                margin-top:10px;
-                margin-bottom:15px;
-            ">
 
-                <p style="
-                    color:#5f0000;
-                    font-weight:500;
-                    margin:0;
-                ">
+            </p>
+
+
+            <!-- ARTICLE META -->
+
+            <div
+                style="
+                    display:flex;
+                    align-items:center;
+                    gap:15px;
+                    margin-top:10px;
+                    margin-bottom:15px;
+                "
+            >
+
+                <!-- AUTHOR -->
+
+                <p
+                    style="
+                        color:#5f0000;
+                        font-weight:500;
+                        margin:0;
+                    "
+                >
+
                     <strong style="color:#111;">
                         Author:
                     </strong>
 
                     {{ article.author }}
+
                 </p>
+
+
+                <!-- CATEGORY -->
 
                 <p style="margin:0;">
-                    <strong>Category:</strong>
-                    {{ article.category }}
+
+                    <strong>
+                        Category:
+                    </strong>
+
+                    <span id="category-display-{{ article.id }}">
+                        {{ article.category }}
+                    </span>
+
                 </p>
 
+
+                <!-- EDIT BUTTON -->
+
                 <button
+                    type="button"
                     onclick="toggleEdit({{ article.id }})"
                     style="
                         width:36px;
@@ -99,17 +143,27 @@
 
             </div>
 
-            <p style="
-                margin:0;
-                font-weight:bold;
-                color:red;
-            " id="age-{{ article.id }}" data-published="{{ article.age_minutes }}
-            ">
-                
+
+            <!-- ARTICLE AGE -->
+
+            <p
+                id="age-{{ article.id }}"
+                data-published="{{ article.age_minutes }}"
+                style="
+                    margin:0;
+                    font-weight:bold;
+                    color:red;
+                "
+            >
+
                 {{ article.age_minutes // 60 }}h
                 {{ article.age_minutes % 60 }}m
-                    ago
+                ago
+
             </p>
+
+
+            <!-- ARTICLE CONTENT -->
 
             <div
                 id="content-display-{{ article.id }}"
@@ -122,6 +176,9 @@
                 {{ article.content | safe }}
             </div>
 
+
+            <!-- EDIT FORM -->
+
             <form
                 id="edit-form-{{ article.id }}"
                 method="POST"
@@ -132,11 +189,17 @@
                     margin-bottom:35px;
                 "
             >
-                <div style="
-                    display:flex;
-                    justify-content:flex-end;
-                    margin-bottom:10px;
-                ">
+
+                <!-- COPY BUTTON -->
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:flex-end;
+                        margin-bottom:10px;
+                    "
+                >
+
                     <button
                         type="button"
                         onclick="copyContent({{ article.id }})"
@@ -153,8 +216,12 @@
                     >
                         📋 Copy Content
                     </button>
+
                 </div>
-                
+
+
+                <!-- TITLE EDITOR -->
+
                 <label>
                     <strong>Title</strong>
                 </label>
@@ -167,10 +234,128 @@
                         width:100%;
                         padding:10px;
                         font-size:20px;
+                        margin-top:8px;
                         margin-bottom:15px;
                         box-sizing:border-box;
                     "
                 >
+
+
+                <!-- CATEGORY EDITOR -->
+
+                <label>
+                    <strong>Category</strong>
+                </label>
+
+                <select
+                    id="category-editor-{{ article.id }}"
+                    style="
+                        width:100%;
+                        padding:10px;
+                        font-size:17px;
+                        margin-top:8px;
+                        margin-bottom:15px;
+                        box-sizing:border-box;
+                    "
+                >
+
+                    <option
+                        value="World"
+                        {% if article.category == "World" %}
+                            selected
+                        {% endif %}
+                    >
+                        World
+                    </option>
+
+
+                    <option
+                        value="India"
+                        {% if article.category == "India" %}
+                            selected
+                        {% endif %}
+                    >
+                        India
+                    </option>
+
+
+                    <option
+                        value="Kerala"
+                        {% if article.category == "Kerala" %}
+                            selected
+                        {% endif %}
+                    >
+                        Kerala
+                    </option>
+
+
+                    <option
+                        value="Entertainment"
+                        {% if article.category == "Entertainment" %}
+                            selected
+                        {% endif %}
+                    >
+                        Entertainment
+                    </option>
+
+
+                    <option
+                        value="Gulf"
+                        {% if article.category == "Gulf" %}
+                            selected
+                        {% endif %}
+                    >
+                        Gulf
+                    </option>
+
+
+                    <option
+                        value="Tech"
+                        {% if article.category == "Tech" %}
+                            selected
+                        {% endif %}
+                    >
+                        Tech
+                    </option>
+
+
+                    <option
+                        value="Sports"
+                        {% if article.category == "Sports" %}
+                            selected
+                        {% endif %}
+                    >
+                        Sports
+                    </option>
+
+
+                    <option
+                        value="Crime"
+                        {% if article.category == "Crime" %}
+                            selected
+                        {% endif %}
+                    >
+                        Crime
+                    </option>
+
+
+                    <option
+                        value="Uncategorized"
+                        {% if article.category == "Uncategorized" %}
+                            selected
+                        {% endif %}
+                    >
+                        Uncategorized
+                    </option>
+
+                </select>
+
+
+                <!-- CONTENT EDITOR -->
+
+                <label>
+                    <strong>Content</strong>
+                </label>
 
                 <textarea
                     id="content-editor-{{ article.id }}"
@@ -178,21 +363,27 @@
                     rows="15"
                     style="
                         width:100%;
-                        margin-top:15px;
+                        margin-top:8px;
                         font-size:16px;
                         padding:10px;
                         box-sizing:border-box;
                     "
                 >{{ article.content }}</textarea>
 
-                <div style="
-                    margin-top:15px;
-                    display:flex;
-                    gap:12px;
-                ">
+
+                <!-- SAVE / CANCEL -->
+
+                <div
+                    style="
+                        margin-top:15px;
+                        display:flex;
+                        gap:12px;
+                    "
+                >
 
                     <button
                         type="button"
+                        onclick="saveArticle({{ article.id }})"
                         style="
                             background:#1f7a1f;
                             color:white;
@@ -203,10 +394,10 @@
                             font-weight:bold;
                             font-size:22px;
                         "
-                        onclick="saveArticle({{ article.id }})"
                     >
                         Save Changes
                     </button>
+
 
                     <button
                         type="button"
@@ -229,20 +420,28 @@
 
             </form>
 
-            <div style="
-                margin:15px 0;
-                display:flex;
-                gap:25px;
-                align-items:center;
-            ">
 
-                <label style="
-                    font-size:22px;
-                    font-weight:bold;
+            <!-- TIERS -->
+
+            <div
+                style="
+                    margin:15px 0;
                     display:flex;
+                    gap:25px;
                     align-items:center;
-                    gap:8px;
-                ">
+                "
+            >
+
+                <label
+                    style="
+                        font-size:22px;
+                        font-weight:bold;
+                        display:flex;
+                        align-items:center;
+                        gap:8px;
+                    "
+                >
+
                     <input
                         type="checkbox"
                         id="tier25-{{ article.id }}"
@@ -251,16 +450,22 @@
                             height:32px;
                         "
                     >
+
                     25
+
                 </label>
 
-                <label style="
-                    font-size:22px;
-                    font-weight:bold;
-                    display:flex;
-                    align-items:center;
-                    gap:8px;
-                ">
+
+                <label
+                    style="
+                        font-size:22px;
+                        font-weight:bold;
+                        display:flex;
+                        align-items:center;
+                        gap:8px;
+                    "
+                >
+
                     <input
                         type="checkbox"
                         id="tier50-{{ article.id }}"
@@ -269,16 +474,22 @@
                             height:32px;
                         "
                     >
+
                     50
+
                 </label>
 
-                <label style="
-                    font-size:22px;
-                    font-weight:bold;
-                    display:flex;
-                    align-items:center;
-                    gap:8px;
-                ">
+
+                <label
+                    style="
+                        font-size:22px;
+                        font-weight:bold;
+                        display:flex;
+                        align-items:center;
+                        gap:8px;
+                    "
+                >
+
                     <input
                         type="checkbox"
                         id="tier100-{{ article.id }}"
@@ -287,16 +498,26 @@
                             height:32px;
                         "
                     >
+
                     100
+
                 </label>
 
             </div>
 
-            <div style="
-                margin-top:30px;
-            ">
+
+            <!-- ACTION BUTTONS -->
+
+            <div
+                style="
+                    margin-top:30px;
+                "
+            >
+
+                <!-- APPROVE -->
 
                 <button
+                    type="button"
                     onclick="approveArticle({{ article.id }})"
                     style="
                         padding:15px 30px;
@@ -313,7 +534,11 @@
                     Approve
                 </button>
 
-                <button 
+
+                <!-- BREAKING -->
+
+                <button
+                    type="button"
                     onclick="confirmBreaking({{ article.id }})"
                     style="
                         padding:15px 30px;
@@ -330,7 +555,11 @@
                     BREAKING
                 </button>
 
-                <button 
+
+                <!-- REJECT -->
+
+                <button
+                    type="button"
                     onclick="moderateArticle({{ article.id }}, 'reject')"
                     style="
                         padding:15px 30px;
@@ -348,48 +577,109 @@
                 </button>
 
             </div>
+
         </div>
+
     {% endfor %}
 
-    <script>
-        async function moderateArticle(articleId, action) {
-            try {
-                const res = await fetch("/" + action + "/" + articleId, {
-                    method: "POST"
-                });
 
-                const articleEl = document.getElementById("article-" + articleId);
+    <!-- MODERATION -->
+
+    <script>
+
+        async function moderateArticle(articleId, action) {
+
+            try {
+
+                const res = await fetch(
+                    "/" + action + "/" + articleId,
+                    {
+                        method: "POST"
+                    }
+                );
+
+
+                const articleEl =
+                    document.getElementById(
+                        "article-" + articleId
+                    );
+
 
                 if (!res.ok) {
-                    articleEl.style.backgroundColor = "#fff3cd";
-                    articleEl.style.borderColor = "#ff9800";
+
+                    articleEl.style.backgroundColor =
+                        "#fff3cd";
+
+                    articleEl.style.borderColor =
+                        "#ff9800";
+
                     return;
+
                 }
+
 
                 if (action === "approve") {
-                    articleEl.style.backgroundColor = "#d4edda";
-                    articleEl.style.borderColor = "green";
-                } else {
-                    articleEl.style.backgroundColor = "#f8d7da";
-                    articleEl.style.borderColor = "red";
+
+                    articleEl.style.backgroundColor =
+                        "#d4edda";
+
+                    articleEl.style.borderColor =
+                        "green";
+
                 }
 
+                else {
+
+                    articleEl.style.backgroundColor =
+                        "#f8d7da";
+
+                    articleEl.style.borderColor =
+                        "red";
+
+                }
+
+
                 setTimeout(function () {
+
                     articleEl.remove();
+
                 }, 800);
 
-            } catch (err) {
-                const articleEl = document.getElementById("article-" + articleId);
-                articleEl.style.backgroundColor = "#fff3cd";
-                articleEl.style.borderColor = "#ff9800";
+
             }
+
+            catch (err) {
+
+                const articleEl =
+                    document.getElementById(
+                        "article-" + articleId
+                    );
+
+
+                articleEl.style.backgroundColor =
+                    "#fff3cd";
+
+                articleEl.style.borderColor =
+                    "#ff9800";
+
+            }
+
         }
+
+    </script>
+
+
+    <!-- EDIT TOGGLE -->
+
+    <script>
 
         function toggleEdit(articleId) {
 
-            const form = document.getElementById(
-                "edit-form-" + articleId
-            );
+            const form =
+                document.getElementById(
+                    "edit-form-" + articleId
+                );
+
 
             if (form.style.display === "none") {
 
@@ -402,32 +692,58 @@
                 form.style.display = "none";
 
             }
+
         }
 
-        function copyContent(articleId) {
+    </script>
 
-            const titleInput = document.getElementById(
-                "title-editor-" + articleId
-            );
 
-            const contentTextarea = document.getElementById(
-                "content-editor-" + articleId
-            );
+    <!-- COPY CONTENT -->
+
+    <script>
+
+        async function copyContent(articleId) {
+
+            const titleInput =
+                document.getElementById(
+                    "title-editor-" + articleId
+                );
+
+
+            const contentTextarea =
+                document.getElementById(
+                    "content-editor-" + articleId
+                );
+
 
             const text =
-        `${titleInput.value}
+                `${titleInput.value}
 
-        ${contentTextarea.value}`;
+${contentTextarea.value}`;
 
-            navigator.clipboard.writeText(text);
 
-            // Clear the edit fields
-            titleInput.value = "";
-            contentTextarea.value = "";
+            try {
+
+                await navigator.clipboard.writeText(text);
+
+                alert("Title and content copied.");
+
+            }
+
+            catch (err) {
+
+                alert("Copy failed.");
+
+            }
 
         }
 
-        
+    </script>
+
+
+    <!-- BREAKING -->
+
+    <script>
 
         async function confirmBreaking(articleId) {
 
@@ -435,9 +751,13 @@
                 "Force publish this article as BREAKING news?"
             );
 
+
             if (!confirmed) {
+
                 return;
+
             }
+
 
             try {
 
@@ -448,20 +768,32 @@
                     }
                 );
 
-                const articleEl = document.getElementById(
-                    "article-" + articleId
-                );
+
+                const articleEl =
+                    document.getElementById(
+                        "article-" + articleId
+                    );
+
 
                 if (!res.ok) {
 
-                    articleEl.style.backgroundColor = "#fff3cd";
-                    articleEl.style.borderColor = "#ff9800";
+                    articleEl.style.backgroundColor =
+                        "#fff3cd";
+
+                    articleEl.style.borderColor =
+                        "#ff9800";
 
                     return;
+
                 }
 
-                articleEl.style.backgroundColor = "#cccfff";
-                articleEl.style.borderColor = "blue";
+
+                articleEl.style.backgroundColor =
+                    "#cccfff";
+
+                articleEl.style.borderColor =
+                    "blue";
+
 
                 setTimeout(function () {
 
@@ -469,59 +801,89 @@
 
                 }, 800);
 
-            } catch (err) {
 
-                const articleEl = document.getElementById(
-                    "article-" + articleId
-                );
-
-                articleEl.style.backgroundColor = "#fff3cd";
-                articleEl.style.borderColor = "#ff9800";
             }
+
+            catch (err) {
+
+                const articleEl =
+                    document.getElementById(
+                        "article-" + articleId
+                    );
+
+
+                articleEl.style.backgroundColor =
+                    "#fff3cd";
+
+                articleEl.style.borderColor =
+                    "#ff9800";
+
+            }
+
         }
+
     </script>
 
+
+    <!-- ARTICLE AGE -->
 
     <script>
 
-    function updateArticleAges() {
+        function updateArticleAges() {
 
-        document.querySelectorAll("[id^='age-']").forEach(el => {
+            document
+                .querySelectorAll("[id^='age-']")
+                .forEach(el => {
 
-            const ArticleAge = parseInt(
-                el.getAttribute("data-published")
-            );
+                    const ArticleAge =
+                        parseInt(
+                            el.getAttribute(
+                                "data-published"
+                            )
+                        );
 
-            const hours = Math.floor(ArticleAge / 60);
 
-            if (hours >= 3) {
+                    const hours =
+                        Math.floor(
+                            ArticleAge / 60
+                        );
 
-                el.style.color = "red";
 
-            }
+                    if (hours >= 3) {
 
-            else if (hours >= 1) {
+                        el.style.color = "red";
 
-                el.style.color = "orange";
+                    }
 
-            }
+                    else if (hours >= 1) {
 
-            else {
+                        el.style.color = "orange";
 
-                el.style.color = "green";
+                    }
 
-            }
-        });
-    }
+                    else {
 
-    updateArticleAges();
+                        el.style.color = "green";
 
-    setInterval(
-        updateArticleAges,
-        60000
-    );
+                    }
+
+                });
+
+        }
+
+
+        updateArticleAges();
+
+
+        setInterval(
+            updateArticleAges,
+            60000
+        );
 
     </script>
+
+
+    <!-- APPROVE -->
 
     <script>
 
@@ -529,29 +891,39 @@
 
             const tiers = [];
 
+
             if (
                 document.getElementById(
                     `tier25-${articleId}`
                 ).checked
             ) {
+
                 tiers.push(25);
+
             }
+
 
             if (
                 document.getElementById(
                     `tier50-${articleId}`
                 ).checked
             ) {
+
                 tiers.push(50);
+
             }
+
 
             if (
                 document.getElementById(
                     `tier100-${articleId}`
                 ).checked
             ) {
+
                 tiers.push(100);
+
             }
+
 
             const res = await fetch(
                 `/approve/${articleId}`,
@@ -559,75 +931,146 @@
                     method: "POST",
 
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type":
+                            "application/json"
                     },
 
                     body: JSON.stringify({
                         tiers: tiers
                     })
+
                 }
             );
 
-            if(res.ok){
+
+            if (res.ok) {
 
                 document
                     .getElementById(
                         `article-${articleId}`
                     )
                     .remove();
+
             }
+
+            else {
+
+                alert("Approval failed.");
+
+            }
+
         }
 
-        </script>
+    </script>
 
-        <script>
 
-        async function saveArticle(articleId){
+    <!-- SAVE ARTICLE -->
 
-            const title = document.getElementById(
-                `title-editor-${articleId}`
-            ).value;
+    <script>
 
-            const content = document.getElementById(
-                `content-editor-${articleId}`
-            ).value;
+        async function saveArticle(articleId) {
 
-            const response = await fetch(
-                `/admin/update/${articleId}`,
-                {
-                    method: "POST",
+            const title =
+                document.getElementById(
+                    `title-editor-${articleId}`
+                ).value;
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
 
-                    body: JSON.stringify({
-                        title: title,
-                        content: content
-                    })
+            const content =
+                document.getElementById(
+                    `content-editor-${articleId}`
+                ).value;
+
+
+            const category =
+                document.getElementById(
+                    `category-editor-${articleId}`
+                ).value;
+
+
+            try {
+
+                const response = await fetch(
+                    `/admin/update/${articleId}`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+
+                            title: title,
+
+                            content: content,
+
+                            category: category
+
+                        })
+
+                    }
+                );
+
+
+                if (response.ok) {
+
+                    /*
+                     * Update title on the page
+                     */
+
+                    document.getElementById(
+                        `title-display-${articleId}`
+                    ).innerText = title;
+
+
+                    /*
+                     * Update content on the page
+                     */
+
+                    document.getElementById(
+                        `content-display-${articleId}`
+                    ).innerHTML = content;
+
+
+                    /*
+                     * Update category on the page
+                     */
+
+                    document.getElementById(
+                        `category-display-${articleId}`
+                    ).innerText = category;
+
+
+                    /*
+                     * Close edit mode
+                     */
+
+                    toggleEdit(articleId);
+
                 }
-            );
 
-            if(response.ok){
+                else {
 
-                document.getElementById(
-                    `title-display-${articleId}`
-                ).innerText = title;
+                    alert("Save failed.");
 
-                document.getElementById(
-                    `content-display-${articleId}`
-                ).innerHTML = content;
-
-                toggleEdit(articleId);
-            }
-
-            else{
-
-                alert("Save failed");
+                }
 
             }
+
+            catch (error) {
+
+                console.error(error);
+
+                alert("Save failed. Please try again.");
+
+            }
+
         }
 
-        </script>
+    </script>
+
+
 </body>
 </html>
