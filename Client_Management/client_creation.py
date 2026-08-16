@@ -10,7 +10,7 @@ from models import ClientCreate
 
 
 router = APIRouter(
-    prefix="/admin/clients",
+    prefix="/admin/add_client",
     tags=["Client Management"]
 )
 
@@ -446,7 +446,7 @@ async function createClient() {
 
 
     const response = await fetch(
-        "/admin/clients",
+        "/admin/add_client",
         {
             method: "POST",
 
