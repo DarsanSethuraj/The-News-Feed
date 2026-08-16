@@ -6,6 +6,30 @@
 <body>
     <h1>Pending Articles</h1>
 
+    <h2>Matching Articles: {{ article_count }}</h2>
+
+    <button
+        onclick="window.location.href='/admin/create-article-page'"
+        style="
+        background:#007bff;
+        color:white;
+        border:none;
+        padding:12px 24px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:bold;
+        margin-bottom:20px;
+        "
+
+        >
+
+        ```
+        ➕ Create Article
+        ```
+
+    </button>
+
+
     {% for article in articles %}
         <div id="article-{{ article.id }}" style="
             border:1px solid #ccc;
@@ -13,44 +37,317 @@
             margin-bottom:20px;
             transition: all 0.3s ease;
         ">
-            <h2>{{ article.title }}</h2>
+            <h2 id="title-display-{{ article.id }}">
+                {{ article.title }}
+            </h2>
 
             {% if article.image_url %}
-                <img src="{{ article.image_url }}" width="300">
+                <img src="{{ article.image_url }}" width="900">
             {% endif %}
             
-            <p style="color: #5f0000; font-weight: 500;">
-                <strong style="color: #111;">Author:</strong> {{ article.author }}
+            <p>
+                <strong>Image URL:</strong>
+                <a
+                    href="{{ article.image_url }}"
+                    target="_blank"
+                    style="word-break: break-all;"
+                >
+                    {{ article.image_url }}
+                </a>
+            </p>
+            
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:15px;
+                margin-top:10px;
+                margin-bottom:15px;
+            ">
+
+                <p style="
+                    color:#5f0000;
+                    font-weight:500;
+                    margin:0;
+                ">
+                    <strong style="color:#111;">
+                        Author:
+                    </strong>
+
+                    {{ article.author }}
+                </p>
+
+                <p style="margin:0;">
+                    <strong>Category:</strong>
+                    {{ article.category }}
+                </p>
+
+                <button
+                    onclick="toggleEdit({{ article.id }})"
+                    style="
+                        width:36px;
+                        height:36px;
+                        border:none;
+                        border-radius:8px;
+                        background:#222;
+                        color:white;
+                        font-size:18px;
+                        cursor:pointer;
+                    "
+                >
+                    ✎
+                </button>
+
+            </div>
+
+            <p style="
+                margin:0;
+                font-weight:bold;
+                color:red;
+            " id="age-{{ article.id }}" data-published="{{ article.age_minutes }}
+            ">
+                
+                {{ article.age_minutes // 60 }}h
+                {{ article.age_minutes % 60 }}m
+                    ago
             </p>
 
-            <p><strong>Category:</strong> {{ article.category }}</p>
-
-            <div style="
-                line-height: 1.8;
-                font-size: 17px;
-                margin-top: 15px;
-            ">
+            <div
+                id="content-display-{{ article.id }}"
+                style="
+                    line-height:1.8;
+                    font-size:17px;
+                    margin-top:15px;
+                "
+            >
                 {{ article.content | safe }}
             </div>
 
-            <button onclick="moderateArticle({{ article.id }}, 'approve')">
-                Approve
-            </button>
-
-            <button 
-                onclick="confirmBreaking({{ article.id }})"
+            <form
+                id="edit-form-{{ article.id }}"
+                method="POST"
+                action="/admin/update/{{ article.id }}"
                 style="
-                    background: red;
-                    color: white;
-                    font-weight: bold;
+                    display:none;
+                    margin-top:20px;
+                    margin-bottom:35px;
                 "
             >
-                BREAKING
-            </button>
+                <div style="
+                    display:flex;
+                    justify-content:flex-end;
+                    margin-bottom:10px;
+                ">
+                    <button
+                        type="button"
+                        onclick="copyContent({{ article.id }})"
+                        style="
+                            background:#007bff;
+                            color:white;
+                            border:none;
+                            padding:12px 24px;
+                            border-radius:8px;
+                            cursor:pointer;
+                            font-weight:bold;
+                            font-size:18px;
+                        "
+                    >
+                        📋 Copy Content
+                    </button>
+                </div>
+                
+                <label>
+                    <strong>Title</strong>
+                </label>
 
-            <button onclick="moderateArticle({{ article.id }}, 'reject')">
-                Reject
-            </button>
+                <input
+                    id="title-editor-{{ article.id }}"
+                    type="text"
+                    value="{{ article.title }}"
+                    style="
+                        width:100%;
+                        padding:10px;
+                        font-size:20px;
+                        margin-bottom:15px;
+                        box-sizing:border-box;
+                    "
+                >
+
+                <textarea
+                    id="content-editor-{{ article.id }}"
+                    name="content"
+                    rows="15"
+                    style="
+                        width:100%;
+                        margin-top:15px;
+                        font-size:16px;
+                        padding:10px;
+                        box-sizing:border-box;
+                    "
+                >{{ article.content }}</textarea>
+
+                <div style="
+                    margin-top:15px;
+                    display:flex;
+                    gap:12px;
+                ">
+
+                    <button
+                        type="button"
+                        style="
+                            background:#1f7a1f;
+                            color:white;
+                            border:none;
+                            padding:10px 18px;
+                            border-radius:6px;
+                            cursor:pointer;
+                            font-weight:bold;
+                            font-size:22px;
+                        "
+                        onclick="saveArticle({{ article.id }})"
+                    >
+                        Save Changes
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="toggleEdit({{ article.id }})"
+                        style="
+                            background:#666;
+                            color:white;
+                            border:none;
+                            padding:10px 18px;
+                            border-radius:6px;
+                            cursor:pointer;
+                            font-weight:bold;
+                            font-size:22px;
+                        "
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+            </form>
+
+            <div style="
+                margin:15px 0;
+                display:flex;
+                gap:25px;
+                align-items:center;
+            ">
+
+                <label style="
+                    font-size:22px;
+                    font-weight:bold;
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                ">
+                    <input
+                        type="checkbox"
+                        id="tier25-{{ article.id }}"
+                        style="
+                            width:32px;
+                            height:32px;
+                        "
+                    >
+                    25
+                </label>
+
+                <label style="
+                    font-size:22px;
+                    font-weight:bold;
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                ">
+                    <input
+                        type="checkbox"
+                        id="tier50-{{ article.id }}"
+                        style="
+                            width:32px;
+                            height:32px;
+                        "
+                    >
+                    50
+                </label>
+
+                <label style="
+                    font-size:22px;
+                    font-weight:bold;
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                ">
+                    <input
+                        type="checkbox"
+                        id="tier100-{{ article.id }}"
+                        style="
+                            width:32px;
+                            height:32px;
+                        "
+                    >
+                    100
+                </label>
+
+            </div>
+
+            <div style="
+                margin-top:30px;
+            ">
+
+                <button
+                    onclick="approveArticle({{ article.id }})"
+                    style="
+                        padding:15px 30px;
+                        font-size:18px;
+                        font-weight:bold;
+                        min-width:140px;
+                        border:none;
+                        border-radius:8px;
+                        cursor:pointer;
+                        background:#28a745;
+                        color:white;
+                    "
+                >
+                    Approve
+                </button>
+
+                <button 
+                    onclick="confirmBreaking({{ article.id }})"
+                    style="
+                        padding:15px 30px;
+                        font-size:18px;
+                        font-weight:bold;
+                        min-width:140px;
+                        border:none;
+                        border-radius:8px;
+                        cursor:pointer;
+                        background:red;
+                        color:white;
+                    "
+                >
+                    BREAKING
+                </button>
+
+                <button 
+                    onclick="moderateArticle({{ article.id }}, 'reject')"
+                    style="
+                        padding:15px 30px;
+                        font-size:18px;
+                        font-weight:bold;
+                        min-width:140px;
+                        border:none;
+                        border-radius:8px;
+                        cursor:pointer;
+                        background:#555;
+                        color:white;
+                    "
+                >
+                    Reject
+                </button>
+
+            </div>
         </div>
     {% endfor %}
 
@@ -87,6 +384,50 @@
                 articleEl.style.borderColor = "#ff9800";
             }
         }
+
+        function toggleEdit(articleId) {
+
+            const form = document.getElementById(
+                "edit-form-" + articleId
+            );
+
+            if (form.style.display === "none") {
+
+                form.style.display = "block";
+
+            }
+
+            else {
+
+                form.style.display = "none";
+
+            }
+        }
+
+        function copyContent(articleId) {
+
+            const titleInput = document.getElementById(
+                "title-editor-" + articleId
+            );
+
+            const contentTextarea = document.getElementById(
+                "content-editor-" + articleId
+            );
+
+            const text =
+        `${titleInput.value}
+
+        ${contentTextarea.value}`;
+
+            navigator.clipboard.writeText(text);
+
+            // Clear the edit fields
+            titleInput.value = "";
+            contentTextarea.value = "";
+
+        }
+
+        
 
         async function confirmBreaking(articleId) {
 
@@ -139,5 +480,154 @@
             }
         }
     </script>
+
+
+    <script>
+
+    function updateArticleAges() {
+
+        document.querySelectorAll("[id^='age-']").forEach(el => {
+
+            const ArticleAge = parseInt(
+                el.getAttribute("data-published")
+            );
+
+            const hours = Math.floor(ArticleAge / 60);
+
+            if (hours >= 3) {
+
+                el.style.color = "red";
+
+            }
+
+            else if (hours >= 1) {
+
+                el.style.color = "orange";
+
+            }
+
+            else {
+
+                el.style.color = "green";
+
+            }
+        });
+    }
+
+    updateArticleAges();
+
+    setInterval(
+        updateArticleAges,
+        60000
+    );
+
+    </script>
+
+    <script>
+
+        async function approveArticle(articleId) {
+
+            const tiers = [];
+
+            if (
+                document.getElementById(
+                    `tier25-${articleId}`
+                ).checked
+            ) {
+                tiers.push(25);
+            }
+
+            if (
+                document.getElementById(
+                    `tier50-${articleId}`
+                ).checked
+            ) {
+                tiers.push(50);
+            }
+
+            if (
+                document.getElementById(
+                    `tier100-${articleId}`
+                ).checked
+            ) {
+                tiers.push(100);
+            }
+
+            const res = await fetch(
+                `/approve/${articleId}`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        tiers: tiers
+                    })
+                }
+            );
+
+            if(res.ok){
+
+                document
+                    .getElementById(
+                        `article-${articleId}`
+                    )
+                    .remove();
+            }
+        }
+
+        </script>
+
+        <script>
+
+        async function saveArticle(articleId){
+
+            const title = document.getElementById(
+                `title-editor-${articleId}`
+            ).value;
+
+            const content = document.getElementById(
+                `content-editor-${articleId}`
+            ).value;
+
+            const response = await fetch(
+                `/admin/update/${articleId}`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        title: title,
+                        content: content
+                    })
+                }
+            );
+
+            if(response.ok){
+
+                document.getElementById(
+                    `title-display-${articleId}`
+                ).innerText = title;
+
+                document.getElementById(
+                    `content-display-${articleId}`
+                ).innerHTML = content;
+
+                toggleEdit(articleId);
+            }
+
+            else{
+
+                alert("Save failed");
+
+            }
+        }
+
+        </script>
 </body>
 </html>

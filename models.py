@@ -22,9 +22,13 @@ class Article(Base):
 
     published_at = Column(DateTime)
     status = Column(String, default="pending")
-    created_at = Column(DateTime, default=datetime.now(IST))
+    created_at = Column(DateTime, default=lambda: datetime.now(IST))
 
     is_breaking = Column(Boolean, default=False)
+
+    show_25 = Column(Boolean, default=False)
+    show_50 = Column(Boolean, default=False)
+    show_100 = Column(Boolean, default=False)
 
 class Client(Base):
     __tablename__ = "clients"
@@ -39,7 +43,7 @@ class Client(Base):
     subscribed_categories = Column(String, default="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime,Uncategorized")
 
     active = Column(Boolean, default=True)
-    activated_at = Column(DateTime, default=datetime.now(IST))
+    activated_at = Column(DateTime, default=lambda: datetime.now(IST))
 
     last_feed_request = Column(DateTime, nullable=True) # for API response optimization
 
@@ -51,6 +55,21 @@ class DeliveryLog(Base):
     client_id = Column(Integer)
     article_id = Column(Integer)
 
-    delivered_at = Column(DateTime, default=datetime.now(IST))
+    delivered_at = Column(DateTime, default=lambda: datetime.now(IST))
+    success = Column(Boolean, default=True)
+    
+
+from pydantic import BaseModel
+
+class ArticleUpdate(BaseModel):
+    title: str
+    content: str
 
 
+
+class CreateArticleRequest(BaseModel):
+    title: str
+    content: str
+    category: str
+    slug: str
+    image_url: str | None = None

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Create Article</title>
+</head>
+
+<body>
+
+<h1>Create Article</h1>
+
+<input
+id="title"
+placeholder="Title"
+style="
+width:100%;
+padding:10px;
+margin-bottom:10px;
+"
+
+>
+
+<div style="
+    display:flex;
+    margin-bottom:10px;
+">
+
+
+<span style="
+    padding:10px;
+    background:#eee;
+    border:1px solid #ccc;
+    border-right:none;
+">
+    https://thenewsfeeds.in/
+</span>
+
+<input
+    id="slug"
+    placeholder="article-slug"
+    style="
+        flex:1;
+        padding:10px;
+    "
+>
+
+
+</div>
+
+<input
+id="category"
+placeholder="Category"
+style="
+width:100%;
+padding:10px;
+margin-bottom:10px;
+"
+
+>
+
+<input
+id="image_url"
+placeholder="Image URL"
+style="
+width:100%;
+padding:10px;
+margin-bottom:10px;
+"
+
+>
+
+<textarea
+    id="content"
+    rows="15"
+    style="
+        width:100%;
+        padding:10px;
+    "
+></textarea>
+
+<br><br>
+
+<button onclick="createArticle()">
+    Create Article
+</button>
+
+<script>
+
+async function createArticle(){
+
+    const response = await fetch(
+        "/admin/create-article",
+        {
+            method:"POST",
+
+            headers:{
+                "Content-Type":"application/json"
+            },
+
+            body:JSON.stringify({
+
+                title:
+                    document.getElementById(
+                        "title"
+                    ).value,
+
+                slug:
+                    document.getElementById(
+                        "slug"
+                    ).value,
+
+                category:
+                    document.getElementById(
+                        "category"
+                    ).value,
+
+                image_url:
+                    document.getElementById(
+                        "image_url"
+                    ).value,
+
+                content:
+                    document.getElementById(
+                        "content"
+                    ).value
+            })
+        }
+    );
+
+    if(response.ok){
+
+        alert(
+            "Article Created"
+        );
+
+        window.location.href =
+            "/admin/pending";
+    }
+
+    else{
+
+        alert(
+            "Failed"
+        );
+    }
+}
+
+</script>
+
+</body>
+</html>
