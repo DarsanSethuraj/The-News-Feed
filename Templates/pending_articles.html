@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Pending Articles</title>
 </head>
@@ -12,6 +13,7 @@
 
 
     <button
+        type="button"
         onclick="window.location.href='/admin/create-article-page'"
         style="
             background:#007bff;
@@ -30,560 +32,537 @@
 
     {% for article in articles %}
 
+    <div
+        id="article-{{ article.id }}"
+        style="
+            border:1px solid #ccc;
+            padding:15px;
+            margin-bottom:20px;
+            transition:all 0.3s ease;
+        "
+    >
+
+        <!-- TITLE -->
+
+        <h2 id="title-display-{{ article.id }}">
+            {{ article.title }}
+        </h2>
+
+
+        <!-- IMAGE -->
+
+        {% if article.image_url %}
+
+        <img
+            src="{{ article.image_url }}"
+            width="900"
+            style="max-width:100%; height:auto;"
+        >
+
+        {% endif %}
+
+
+        <!-- IMAGE URL -->
+
+        {% if article.image_url %}
+
+        <p>
+
+            <strong>Image URL:</strong>
+
+            <a
+                href="{{ article.image_url }}"
+                target="_blank"
+                style="word-break:break-all;"
+            >
+                {{ article.image_url }}
+            </a>
+
+        </p>
+
+        {% endif %}
+
+
+        <!-- AUTHOR + CATEGORY + EDIT -->
+
         <div
-            id="article-{{ article.id }}"
             style="
-                border:1px solid #ccc;
-                padding:15px;
-                margin-bottom:20px;
-                transition:all 0.3s ease;
+                display:flex;
+                align-items:center;
+                gap:15px;
+                margin-top:10px;
+                margin-bottom:15px;
+                flex-wrap:wrap;
             "
         >
 
-            <!-- TITLE -->
+            <p
+                style="
+                    color:#5f0000;
+                    font-weight:500;
+                    margin:0;
+                "
+            >
+                <strong style="color:#111;">
+                    Author:
+                </strong>
 
-            <h2 id="title-display-{{ article.id }}">
-                {{ article.title }}
-            </h2>
-
-
-            <!-- IMAGE -->
-
-            {% if article.image_url %}
-
-                <img
-                    src="{{ article.image_url }}"
-                    width="900"
-                >
-
-            {% endif %}
+                {{ article.author }}
+            </p>
 
 
-            <!-- IMAGE URL -->
+            <p style="margin:0;">
 
-            <p>
+                <strong>
+                    Category:
+                </strong>
 
-                <strong>Image URL:</strong>
-
-                <a
-                    href="{{ article.image_url }}"
-                    target="_blank"
-                    style="word-break:break-all;"
-                >
-                    {{ article.image_url }}
-                </a>
+                <span id="category-display-{{ article.id }}">
+                    {{ article.category }}
+                </span>
 
             </p>
 
 
-            <!-- ARTICLE META -->
+            <!-- EDIT BUTTON -->
+
+            <button
+                type="button"
+                onclick="toggleEdit({{ article.id }})"
+                style="
+                    width:36px;
+                    height:36px;
+                    border:none;
+                    border-radius:8px;
+                    background:#222;
+                    color:white;
+                    font-size:18px;
+                    cursor:pointer;
+                "
+                title="Edit article"
+            >
+                ✎
+            </button>
+
+        </div>
+
+
+        <!-- ARTICLE AGE -->
+
+        <p
+            id="age-{{ article.id }}"
+            data-age-minutes="{{ article.age_minutes }}"
+            style="
+                margin:0;
+                font-weight:bold;
+            "
+        >
+            {{ article.age_minutes // 60 }}h
+            {{ article.age_minutes % 60 }}m
+            ago
+        </p>
+
+
+        <!-- CONTENT DISPLAY -->
+
+        <div
+            id="content-display-{{ article.id }}"
+            style="
+                line-height:1.8;
+                font-size:17px;
+                margin-top:15px;
+            "
+        >
+            {{ article.content | safe }}
+        </div>
+
+
+        <!-- EDIT FORM -->
+
+        <div
+            id="edit-form-{{ article.id }}"
+            style="
+                display:none;
+                margin-top:25px;
+                margin-bottom:35px;
+            "
+        >
+
+            <!-- COPY CONTENT BUTTON -->
 
             <div
                 style="
                     display:flex;
-                    align-items:center;
-                    gap:15px;
-                    margin-top:10px;
+                    justify-content:flex-end;
                     margin-bottom:15px;
                 "
             >
 
-                <!-- AUTHOR -->
-
-                <p
+                <button
+                    type="button"
+                    onclick="copyContent({{ article.id }})"
                     style="
-                        color:#5f0000;
-                        font-weight:500;
-                        margin:0;
+                        background:#007bff;
+                        color:white;
+                        border:none;
+                        padding:12px 24px;
+                        border-radius:8px;
+                        cursor:pointer;
+                        font-weight:bold;
+                        font-size:18px;
                     "
                 >
+                    📋 Copy Content
+                </button>
 
-                    <strong style="color:#111;">
-                        Author:
-                    </strong>
-
-                    {{ article.author }}
-
-                </p>
+            </div>
 
 
-                <!-- CATEGORY -->
+            <!-- TITLE -->
 
-                <p style="margin:0;">
+            <label>
+                <strong>Title</strong>
+            </label>
 
-                    <strong>
-                        Category:
-                    </strong>
+            <input
+                id="title-editor-{{ article.id }}"
+                type="text"
+                value="{{ article.title }}"
+                style="
+                    width:100%;
+                    padding:10px;
+                    font-size:20px;
+                    margin-top:8px;
+                    margin-bottom:15px;
+                    box-sizing:border-box;
+                "
+            >
 
-                    <span id="category-display-{{ article.id }}">
-                        {{ article.category }}
-                    </span>
 
-                </p>
+            <!-- CATEGORY -->
+
+            <label>
+                <strong>Category</strong>
+            </label>
+
+            <select
+                id="category-editor-{{ article.id }}"
+                style="
+                    width:100%;
+                    padding:10px;
+                    font-size:17px;
+                    margin-top:8px;
+                    margin-bottom:15px;
+                    box-sizing:border-box;
+                "
+            >
+
+                <option
+                    value="World"
+                    {% if article.category == "World" %}selected{% endif %}
+                >
+                    World
+                </option>
 
 
-                <!-- EDIT BUTTON -->
+                <option
+                    value="India"
+                    {% if article.category == "India" %}selected{% endif %}
+                >
+                    India
+                </option>
+
+
+                <option
+                    value="Kerala"
+                    {% if article.category == "Kerala" %}selected{% endif %}
+                >
+                    Kerala
+                </option>
+
+
+                <option
+                    value="Entertainment"
+                    {% if article.category == "Entertainment" %}selected{% endif %}
+                >
+                    Entertainment
+                </option>
+
+
+                <option
+                    value="Gulf"
+                    {% if article.category == "Gulf" %}selected{% endif %}
+                >
+                    Gulf
+                </option>
+
+
+                <option
+                    value="Tech"
+                    {% if article.category == "Tech" %}selected{% endif %}
+                >
+                    Tech
+                </option>
+
+
+                <option
+                    value="Sports"
+                    {% if article.category == "Sports" %}selected{% endif %}
+                >
+                    Sports
+                </option>
+
+
+                <option
+                    value="Crime"
+                    {% if article.category == "Crime" %}selected{% endif %}
+                >
+                    Crime
+                </option>
+
+
+                <option
+                    value="Uncategorized"
+                    {% if article.category == "Uncategorized" %}selected{% endif %}
+                >
+                    Uncategorized
+                </option>
+
+            </select>
+
+
+            <!-- CONTENT -->
+
+            <label>
+                <strong>Content</strong>
+            </label>
+
+            <textarea
+                id="content-editor-{{ article.id }}"
+                rows="15"
+                style="
+                    width:100%;
+                    margin-top:8px;
+                    font-size:16px;
+                    padding:10px;
+                    box-sizing:border-box;
+                "
+            >{{ article.content }}</textarea>
+
+
+            <!-- SAVE / CANCEL -->
+
+            <div
+                style="
+                    margin-top:15px;
+                    display:flex;
+                    gap:12px;
+                "
+            >
+
+                <button
+                    type="button"
+                    onclick="saveArticle({{ article.id }})"
+                    style="
+                        background:#1f7a1f;
+                        color:white;
+                        border:none;
+                        padding:10px 18px;
+                        border-radius:6px;
+                        cursor:pointer;
+                        font-weight:bold;
+                        font-size:20px;
+                    "
+                >
+                    Save Changes
+                </button>
+
 
                 <button
                     type="button"
                     onclick="toggleEdit({{ article.id }})"
                     style="
-                        width:36px;
-                        height:36px;
-                        border:none;
-                        border-radius:8px;
-                        background:#222;
+                        background:#666;
                         color:white;
-                        font-size:18px;
+                        border:none;
+                        padding:10px 18px;
+                        border-radius:6px;
                         cursor:pointer;
-                    "
-                >
-                    ✎
-                </button>
-
-            </div>
-
-
-            <!-- ARTICLE AGE -->
-
-            <p
-                id="age-{{ article.id }}"
-                data-published="{{ article.age_minutes }}"
-                style="
-                    margin:0;
-                    font-weight:bold;
-                    color:red;
-                "
-            >
-
-                {{ article.age_minutes // 60 }}h
-                {{ article.age_minutes % 60 }}m
-                ago
-
-            </p>
-
-
-            <!-- ARTICLE CONTENT -->
-
-            <div
-                id="content-display-{{ article.id }}"
-                style="
-                    line-height:1.8;
-                    font-size:17px;
-                    margin-top:15px;
-                "
-            >
-                {{ article.content | safe }}
-            </div>
-
-
-            <!-- EDIT FORM -->
-
-            <form
-                id="edit-form-{{ article.id }}"
-                method="POST"
-                action="/admin/update/{{ article.id }}"
-                style="
-                    display:none;
-                    margin-top:20px;
-                    margin-bottom:35px;
-                "
-            >
-
-                <!-- COPY BUTTON -->
-
-                <div
-                    style="
-                        display:flex;
-                        justify-content:flex-end;
-                        margin-bottom:10px;
-                    "
-                >
-
-                    <button
-                        type="button"
-                        onclick="copyContent({{ article.id }})"
-                        style="
-                            background:#007bff;
-                            color:white;
-                            border:none;
-                            padding:12px 24px;
-                            border-radius:8px;
-                            cursor:pointer;
-                            font-weight:bold;
-                            font-size:18px;
-                        "
-                    >
-                        📋 Copy Content
-                    </button>
-
-                </div>
-
-
-                <!-- TITLE EDITOR -->
-
-                <label>
-                    <strong>Title</strong>
-                </label>
-
-                <input
-                    id="title-editor-{{ article.id }}"
-                    type="text"
-                    value="{{ article.title }}"
-                    style="
-                        width:100%;
-                        padding:10px;
+                        font-weight:bold;
                         font-size:20px;
-                        margin-top:8px;
-                        margin-bottom:15px;
-                        box-sizing:border-box;
                     "
                 >
-
-
-                <!-- CATEGORY EDITOR -->
-
-                <label>
-                    <strong>Category</strong>
-                </label>
-
-                <select
-                    id="category-editor-{{ article.id }}"
-                    style="
-                        width:100%;
-                        padding:10px;
-                        font-size:17px;
-                        margin-top:8px;
-                        margin-bottom:15px;
-                        box-sizing:border-box;
-                    "
-                >
-
-                    <option
-                        value="World"
-                        {% if article.category == "World" %}
-                            selected
-                        {% endif %}
-                    >
-                        World
-                    </option>
-
-
-                    <option
-                        value="India"
-                        {% if article.category == "India" %}
-                            selected
-                        {% endif %}
-                    >
-                        India
-                    </option>
-
-
-                    <option
-                        value="Kerala"
-                        {% if article.category == "Kerala" %}
-                            selected
-                        {% endif %}
-                    >
-                        Kerala
-                    </option>
-
-
-                    <option
-                        value="Entertainment"
-                        {% if article.category == "Entertainment" %}
-                            selected
-                        {% endif %}
-                    >
-                        Entertainment
-                    </option>
-
-
-                    <option
-                        value="Gulf"
-                        {% if article.category == "Gulf" %}
-                            selected
-                        {% endif %}
-                    >
-                        Gulf
-                    </option>
-
-
-                    <option
-                        value="Tech"
-                        {% if article.category == "Tech" %}
-                            selected
-                        {% endif %}
-                    >
-                        Tech
-                    </option>
-
-
-                    <option
-                        value="Sports"
-                        {% if article.category == "Sports" %}
-                            selected
-                        {% endif %}
-                    >
-                        Sports
-                    </option>
-
-
-                    <option
-                        value="Crime"
-                        {% if article.category == "Crime" %}
-                            selected
-                        {% endif %}
-                    >
-                        Crime
-                    </option>
-
-
-                    <option
-                        value="Uncategorized"
-                        {% if article.category == "Uncategorized" %}
-                            selected
-                        {% endif %}
-                    >
-                        Uncategorized
-                    </option>
-
-                </select>
-
-
-                <!-- CONTENT EDITOR -->
-
-                <label>
-                    <strong>Content</strong>
-                </label>
-
-                <textarea
-                    id="content-editor-{{ article.id }}"
-                    name="content"
-                    rows="15"
-                    style="
-                        width:100%;
-                        margin-top:8px;
-                        font-size:16px;
-                        padding:10px;
-                        box-sizing:border-box;
-                    "
-                >{{ article.content }}</textarea>
-
-
-                <!-- SAVE / CANCEL -->
-
-                <div
-                    style="
-                        margin-top:15px;
-                        display:flex;
-                        gap:12px;
-                    "
-                >
-
-                    <button
-                        type="button"
-                        onclick="saveArticle({{ article.id }})"
-                        style="
-                            background:#1f7a1f;
-                            color:white;
-                            border:none;
-                            padding:10px 18px;
-                            border-radius:6px;
-                            cursor:pointer;
-                            font-weight:bold;
-                            font-size:22px;
-                        "
-                    >
-                        Save Changes
-                    </button>
-
-
-                    <button
-                        type="button"
-                        onclick="toggleEdit({{ article.id }})"
-                        style="
-                            background:#666;
-                            color:white;
-                            border:none;
-                            padding:10px 18px;
-                            border-radius:6px;
-                            cursor:pointer;
-                            font-weight:bold;
-                            font-size:22px;
-                        "
-                    >
-                        Cancel
-                    </button>
-
-                </div>
-
-            </form>
-
-
-            <!-- TIERS -->
-
-            <div
-                style="
-                    margin:15px 0;
-                    display:flex;
-                    gap:25px;
-                    align-items:center;
-                "
-            >
-
-                <label
-                    style="
-                        font-size:22px;
-                        font-weight:bold;
-                        display:flex;
-                        align-items:center;
-                        gap:8px;
-                    "
-                >
-
-                    <input
-                        type="checkbox"
-                        id="tier25-{{ article.id }}"
-                        style="
-                            width:32px;
-                            height:32px;
-                        "
-                    >
-
-                    25
-
-                </label>
-
-
-                <label
-                    style="
-                        font-size:22px;
-                        font-weight:bold;
-                        display:flex;
-                        align-items:center;
-                        gap:8px;
-                    "
-                >
-
-                    <input
-                        type="checkbox"
-                        id="tier50-{{ article.id }}"
-                        style="
-                            width:32px;
-                            height:32px;
-                        "
-                    >
-
-                    50
-
-                </label>
-
-
-                <label
-                    style="
-                        font-size:22px;
-                        font-weight:bold;
-                        display:flex;
-                        align-items:center;
-                        gap:8px;
-                    "
-                >
-
-                    <input
-                        type="checkbox"
-                        id="tier100-{{ article.id }}"
-                        style="
-                            width:32px;
-                            height:32px;
-                        "
-                    >
-
-                    100
-
-                </label>
-
-            </div>
-
-
-            <!-- ACTION BUTTONS -->
-
-            <div
-                style="
-                    margin-top:30px;
-                "
-            >
-
-                <!-- APPROVE -->
-
-                <button
-                    type="button"
-                    onclick="approveArticle({{ article.id }})"
-                    style="
-                        padding:15px 30px;
-                        font-size:18px;
-                        font-weight:bold;
-                        min-width:140px;
-                        border:none;
-                        border-radius:8px;
-                        cursor:pointer;
-                        background:#28a745;
-                        color:white;
-                    "
-                >
-                    Approve
-                </button>
-
-
-                <!-- BREAKING -->
-
-                <button
-                    type="button"
-                    onclick="confirmBreaking({{ article.id }})"
-                    style="
-                        padding:15px 30px;
-                        font-size:18px;
-                        font-weight:bold;
-                        min-width:140px;
-                        border:none;
-                        border-radius:8px;
-                        cursor:pointer;
-                        background:red;
-                        color:white;
-                    "
-                >
-                    BREAKING
-                </button>
-
-
-                <!-- REJECT -->
-
-                <button
-                    type="button"
-                    onclick="moderateArticle({{ article.id }}, 'reject')"
-                    style="
-                        padding:15px 30px;
-                        font-size:18px;
-                        font-weight:bold;
-                        min-width:140px;
-                        border:none;
-                        border-radius:8px;
-                        cursor:pointer;
-                        background:#555;
-                        color:white;
-                    "
-                >
-                    Reject
+                    Cancel
                 </button>
 
             </div>
 
         </div>
 
+
+        <!-- TIERS -->
+
+        <div
+            style="
+                margin:15px 0;
+                display:flex;
+                gap:25px;
+                align-items:center;
+            "
+        >
+
+            <label
+                style="
+                    font-size:22px;
+                    font-weight:bold;
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                "
+            >
+
+                <input
+                    type="checkbox"
+                    id="tier25-{{ article.id }}"
+                    style="
+                        width:32px;
+                        height:32px;
+                    "
+                >
+
+                25
+
+            </label>
+
+
+            <label
+                style="
+                    font-size:22px;
+                    font-weight:bold;
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                "
+            >
+
+                <input
+                    type="checkbox"
+                    id="tier50-{{ article.id }}"
+                    style="
+                        width:32px;
+                        height:32px;
+                    "
+                >
+
+                50
+
+            </label>
+
+
+            <label
+                style="
+                    font-size:22px;
+                    font-weight:bold;
+                    display:flex;
+                    align-items:center;
+                    gap:8px;
+                "
+            >
+
+                <input
+                    type="checkbox"
+                    id="tier100-{{ article.id }}"
+                    style="
+                        width:32px;
+                        height:32px;
+                    "
+                >
+
+                100
+
+            </label>
+
+        </div>
+
+
+        <!-- ACTION BUTTONS -->
+
+        <div
+            style="
+                margin-top:30px;
+            "
+        >
+
+            <!-- APPROVE -->
+
+            <button
+                type="button"
+                onclick="approveArticle({{ article.id }})"
+                style="
+                    padding:15px 30px;
+                    font-size:18px;
+                    font-weight:bold;
+                    min-width:140px;
+                    border:none;
+                    border-radius:8px;
+                    cursor:pointer;
+                    background:#28a745;
+                    color:white;
+                "
+            >
+                Approve
+            </button>
+
+
+            <!-- BREAKING -->
+
+            <button
+                type="button"
+                onclick="confirmBreaking({{ article.id }})"
+                style="
+                    padding:15px 30px;
+                    font-size:18px;
+                    font-weight:bold;
+                    min-width:140px;
+                    border:none;
+                    border-radius:8px;
+                    cursor:pointer;
+                    background:red;
+                    color:white;
+                "
+            >
+                BREAKING
+            </button>
+
+
+            <!-- REJECT -->
+
+            <button
+                type="button"
+                onclick="moderateArticle({{ article.id }}, 'reject')"
+                style="
+                    padding:15px 30px;
+                    font-size:18px;
+                    font-weight:bold;
+                    min-width:140px;
+                    border:none;
+                    border-radius:8px;
+                    cursor:pointer;
+                    background:#555;
+                    color:white;
+                "
+            >
+                Reject
+            </button>
+
+        </div>
+
+    </div>
+
     {% endfor %}
 
 
-    <!-- MODERATION -->
+    <!-- APPROVE / REJECT -->
 
     <script>
 
@@ -704,35 +683,66 @@
 
         async function copyContent(articleId) {
 
-            const titleInput =
+            const titleField =
                 document.getElementById(
                     "title-editor-" + articleId
                 );
 
 
-            const contentTextarea =
+            const contentField =
                 document.getElementById(
                     "content-editor-" + articleId
                 );
 
 
-            const text =
-                `${titleInput.value}
+            const title =
+                titleField.value;
 
-${contentTextarea.value}`;
+
+            const content =
+                contentField.value;
+
+
+            const textToCopy =
+                title + "\n\n" + content;
 
 
             try {
 
-                await navigator.clipboard.writeText(text);
+                await navigator.clipboard.writeText(
+                    textToCopy
+                );
+
+
+                /*
+                 * Clear the fields AFTER
+                 * successfully copying.
+                 */
+
+                titleField.value = "";
+
+                contentField.value = "";
+
+
+                /*
+                 * Keep the category unchanged.
+                 */
 
                 alert("Title and content copied.");
 
+
             }
 
-            catch (err) {
+            catch (error) {
 
-                alert("Copy failed.");
+                console.error(
+                    "Copy failed:",
+                    error
+                );
+
+                alert(
+                    "Failed to copy content."
+                );
 
             }
 
@@ -832,20 +842,22 @@ ${contentTextarea.value}`;
         function updateArticleAges() {
 
             document
-                .querySelectorAll("[id^='age-']")
-                .forEach(el => {
+                .querySelectorAll(
+                    "[id^='age-']"
+                )
+                .forEach(function (el) {
 
-                    const ArticleAge =
+                    const ageMinutes =
                         parseInt(
                             el.getAttribute(
-                                "data-published"
+                                "data-age-minutes"
                             )
                         );
 
 
                     const hours =
                         Math.floor(
-                            ArticleAge / 60
+                            ageMinutes / 60
                         );
 
 
@@ -925,37 +937,53 @@ ${contentTextarea.value}`;
             }
 
 
-            const res = await fetch(
-                `/approve/${articleId}`,
-                {
-                    method: "POST",
+            try {
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                const res = await fetch(
+                    `/approve/${articleId}`,
+                    {
+                        method: "POST",
 
-                    body: JSON.stringify({
-                        tiers: tiers
-                    })
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            tiers: tiers
+                        })
+
+                    }
+                );
+
+
+                if (res.ok) {
+
+                    document
+                        .getElementById(
+                            `article-${articleId}`
+                        )
+                        .remove();
 
                 }
-            );
 
+                else {
 
-            if (res.ok) {
+                    alert(
+                        "Approval failed."
+                    );
 
-                document
-                    .getElementById(
-                        `article-${articleId}`
-                    )
-                    .remove();
+                }
 
             }
 
-            else {
+            catch (error) {
 
-                alert("Approval failed.");
+                console.error(error);
+
+                alert(
+                    "Approval failed."
+                );
 
             }
 
@@ -988,6 +1016,33 @@ ${contentTextarea.value}`;
                 ).value;
 
 
+            /*
+             * Do not allow empty title/content
+             * when saving.
+             */
+
+            if (!title.trim()) {
+
+                alert(
+                    "Title cannot be empty."
+                );
+
+                return;
+
+            }
+
+
+            if (!content.trim()) {
+
+                alert(
+                    "Content cannot be empty."
+                );
+
+                return;
+
+            }
+
+
             try {
 
                 const response = await fetch(
@@ -1017,7 +1072,7 @@ ${contentTextarea.value}`;
                 if (response.ok) {
 
                     /*
-                     * Update title on the page
+                     * Update title display
                      */
 
                     document.getElementById(
@@ -1026,7 +1081,7 @@ ${contentTextarea.value}`;
 
 
                     /*
-                     * Update content on the page
+                     * Update content display
                      */
 
                     document.getElementById(
@@ -1035,7 +1090,7 @@ ${contentTextarea.value}`;
 
 
                     /*
-                     * Update category on the page
+                     * Update category display
                      */
 
                     document.getElementById(
@@ -1053,7 +1108,31 @@ ${contentTextarea.value}`;
 
                 else {
 
-                    alert("Save failed.");
+                    let errorMessage =
+                        "Save failed.";
+
+                    try {
+
+                        const data =
+                            await response.json();
+
+                        if (data.detail) {
+
+                            errorMessage =
+                                data.detail;
+
+                        }
+
+                    }
+
+                    catch (error) {
+
+                        // Ignore JSON parsing error
+
+                    }
+
+
+                    alert(errorMessage);
 
                 }
 
@@ -1061,9 +1140,14 @@ ${contentTextarea.value}`;
 
             catch (error) {
 
-                console.error(error);
+                console.error(
+                    "Save error:",
+                    error
+                );
 
-                alert("Save failed. Please try again.");
+                alert(
+                    "Could not connect to the server."
+                );
 
             }
 
@@ -1073,4 +1157,5 @@ ${contentTextarea.value}`;
 
 
 </body>
+
 </html>
