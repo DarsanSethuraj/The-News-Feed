@@ -58,6 +58,23 @@ class DeliveryLog(Base):
 
     delivered_at = Column(DateTime, default=lambda: datetime.now(IST))
     success = Column(Boolean, default=True)
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    name = Column(
+        String,
+        unique=True,
+        nullable=False
+    )
+
+    active = Column(
+        Boolean,
+        nullable=False,
+        default=True
+    )
     
 
 from pydantic import BaseModel
