@@ -41,7 +41,7 @@ class ArticleUpdate(BaseModel):
 # Allowed categories
 # ---------------------------------------------------------
 
-ALLOWED_CATEGORIES = {
+ALLOWED_CATEGORIES = (
     "World",
     "India",
     "Kerala",
@@ -51,7 +51,7 @@ ALLOWED_CATEGORIES = {
     "Sports",
     "Crime",
     "Uncategorized"
-}
+)
 
 
 # ---------------------------------------------------------
@@ -118,7 +118,8 @@ def admin_pending(
             context={
                 "request": request,
                 "articles": articles,
-                "article_count": article_count
+                "article_count": article_count,
+                "categories": ALLOWED_CATEGORIES
             }
         )
 

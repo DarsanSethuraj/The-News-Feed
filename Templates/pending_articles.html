@@ -2,14 +2,27 @@
 <html>
 
 <head>
+
     <title>Pending Articles</title>
+
 </head>
+
 
 <body>
 
+
     <h1>Pending Articles</h1>
 
-    <h2>Matching Articles: {{ article_count }}</h2>
+
+    <h2>
+        Matching Articles:
+        <span id="article-count">
+            {{ article_count }}
+        </span>
+    </h2>
+
+
+    <!-- CREATE ARTICLE -->
 
     <button
         type="button"
@@ -29,10 +42,87 @@
     </button>
 
 
+    <!-- CATEGORY FILTER -->
+
+    <div
+        style="
+            margin-bottom:25px;
+            padding:15px;
+            background:#f5f5f5;
+            border:1px solid #ddd;
+            border-radius:8px;
+        "
+    >
+
+        <label
+            for="category-filter"
+            style="
+                font-weight:bold;
+                font-size:18px;
+                margin-right:10px;
+            "
+        >
+            Filter by Category:
+        </label>
+
+
+        <select
+            id="category-filter"
+            onchange="filterArticlesByCategory()"
+            style="
+                padding:10px 15px;
+                font-size:16px;
+                border:1px solid #ccc;
+                border-radius:6px;
+                min-width:220px;
+                cursor:pointer;
+            "
+        >
+
+            <option value="all">
+                All Categories
+            </option>
+
+
+            <option value="World">World</option>
+            <option value="India">India</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Gulf">Gulf</option>
+            <option value="Tech">Tech</option>
+            <option value="Sports">Sports</option>
+            <option value="Crime">Crime</option>
+            <option value="Uncategorized">Uncategorized</option>
+
+        </select>
+
+
+        <button
+            type="button"
+            onclick="resetCategoryFilter()"
+            style="
+                margin-left:10px;
+                padding:10px 16px;
+                border:none;
+                border-radius:6px;
+                background:#555;
+                color:white;
+                cursor:pointer;
+            "
+        >
+            Reset
+        </button>
+
+    </div>
+
+
+
     {% for article in articles %}
+
 
     <div
         id="article-{{ article.id }}"
+        data-category="{{ article.category }}"
         style="
             border:1px solid #ccc;
             padding:15px;
@@ -41,11 +131,13 @@
         "
     >
 
+
         <!-- TITLE -->
 
         <h2 id="title-display-{{ article.id }}">
             {{ article.title }}
         </h2>
+
 
 
         <!-- IMAGE -->
@@ -65,22 +157,27 @@
         {% endif %}
 
 
+
         <!-- IMAGE URL -->
 
         <p>
 
-            <strong>Image URL:</strong>
+            <strong>
+                Image URL:
+            </strong>
 
             <span
                 id="image-url-display-{{ article.id }}"
-                style="word-break:break-all;
-                color:#007bff;
+                style="
+                    word-break:break-all;
+                    color:#007bff;
                 "
             >
                 {{ article.image_url or '' }}
             </span>
 
         </p>
+
 
 
         <!-- AUTHOR + CATEGORY + EDIT -->
@@ -113,17 +210,21 @@
             </p>
 
 
+
             <p style="margin:0;">
 
                 <strong>
                     Category:
                 </strong>
 
-                <span id="category-display-{{ article.id }}">
+                <span
+                    id="category-display-{{ article.id }}"
+                >
                     {{ article.category }}
                 </span>
 
             </p>
+
 
 
             <!-- EDIT BUTTON -->
@@ -149,6 +250,7 @@
         </div>
 
 
+
         <!-- ARTICLE AGE -->
 
         <p
@@ -159,10 +261,13 @@
                 font-weight:bold;
             "
         >
+
             {{ article.age_minutes // 60 }}h
             {{ article.age_minutes % 60 }}m
             ago
+
         </p>
+
 
 
         <!-- CONTENT DISPLAY -->
@@ -179,6 +284,7 @@
         </div>
 
 
+
         <!-- EDIT FORM -->
 
         <div
@@ -189,6 +295,7 @@
                 margin-bottom:35px;
             "
         >
+
 
             <!-- COPY CONTENT -->
 
@@ -220,11 +327,17 @@
             </div>
 
 
+
             <!-- TITLE -->
 
             <label>
-                <strong>Title</strong>
+
+                <strong>
+                    Title
+                </strong>
+
             </label>
+
 
             <input
                 id="title-editor-{{ article.id }}"
@@ -241,11 +354,17 @@
             >
 
 
+
             <!-- CATEGORY -->
 
             <label>
-                <strong>Category</strong>
+
+                <strong>
+                    Category
+                </strong>
+
             </label>
+
 
             <select
                 id="category-editor-{{ article.id }}"
@@ -315,21 +434,20 @@
                     Crime
                 </option>
 
-                <option
-                    value="Uncategorized"
-                    {% if article.category == "Uncategorized" %}selected{% endif %}
-                >
-                    Uncategorized
-                </option>
-
             </select>
+
 
 
             <!-- IMAGE URL -->
 
             <label>
-                <strong>Image URL</strong>
+
+                <strong>
+                    Image URL
+                </strong>
+
             </label>
+
 
             <input
                 id="image-editor-{{ article.id }}"
@@ -347,11 +465,17 @@
             >
 
 
+
             <!-- CONTENT -->
 
             <label>
-                <strong>Content</strong>
+
+                <strong>
+                    Content
+                </strong>
+
             </label>
+
 
             <textarea
                 id="content-editor-{{ article.id }}"
@@ -364,6 +488,7 @@
                     box-sizing:border-box;
                 "
             >{{ article.content }}</textarea>
+
 
 
             <!-- SAVE / CANCEL -->
@@ -416,6 +541,7 @@
         </div>
 
 
+
         <!-- TIERS -->
 
         <div
@@ -451,6 +577,7 @@
             </label>
 
 
+
             <label
                 style="
                     font-size:22px;
@@ -473,6 +600,7 @@
                 50
 
             </label>
+
 
 
             <label
@@ -499,6 +627,7 @@
             </label>
 
         </div>
+
 
 
         <!-- ACTION BUTTONS -->
@@ -528,6 +657,7 @@
             </button>
 
 
+
             <button
                 type="button"
                 onclick="confirmBreaking({{ article.id }})"
@@ -545,6 +675,7 @@
             >
                 BREAKING
             </button>
+
 
 
             <button
@@ -567,16 +698,94 @@
 
         </div>
 
+
     </div>
 
+
     {% endfor %}
+
+
+
+    <!-- CATEGORY FILTER -->
+
+    <script>
+
+        function filterArticlesByCategory() {
+
+            const selectedCategory =
+                document.getElementById(
+                    "category-filter"
+                ).value;
+
+
+            const articles =
+                document.querySelectorAll(
+                    "[id^='article-']"
+                );
+
+
+            let visibleCount = 0;
+
+
+            articles.forEach(function(article) {
+
+                const articleCategory =
+                    article.getAttribute(
+                        "data-category"
+                    );
+
+
+                if (
+                    selectedCategory === "all" ||
+                    articleCategory === selectedCategory
+                ) {
+
+                    article.style.display = "block";
+
+                    visibleCount++;
+
+                }
+
+                else {
+
+                    article.style.display = "none";
+
+                }
+
+            });
+
+
+            document.getElementById(
+                "article-count"
+            ).innerText = visibleCount;
+
+        }
+
+
+
+        function resetCategoryFilter() {
+
+            document.getElementById(
+                "category-filter"
+            ).value = "all";
+
+
+            filterArticlesByCategory();
+
+        }
+
+    </script>
+
 
 
     <!-- APPROVE / REJECT -->
 
     <script>
 
-        async function moderateArticle(articleId, action) {
+        async function moderateArticle(
+            articleId,
+            action
+        ) {
 
             try {
 
@@ -628,9 +837,11 @@
                 }
 
 
-                setTimeout(function () {
+                setTimeout(function() {
 
                     articleEl.remove();
+
+                    filterArticlesByCategory();
 
                 }, 800);
 
@@ -656,6 +867,7 @@
         }
 
     </script>
+
 
 
     <!-- EDIT TOGGLE -->
@@ -685,6 +897,7 @@
         }
 
     </script>
+
 
 
     <!-- COPY CONTENT -->
@@ -724,20 +937,10 @@
                 );
 
 
-                /*
-                 * Clear title and content
-                 * ONLY after successful copy.
-                 */
-
                 titleField.value = "";
 
                 contentField.value = "";
 
-
-                /*
-                 * Category and image URL
-                 * remain unchanged.
-                 */
 
                 alert(
                     "Title and content copied."
@@ -752,6 +955,7 @@
                     error
                 );
 
+
                 alert(
                     "Failed to copy content."
                 );
@@ -761,6 +965,7 @@
         }
 
     </script>
+
 
 
     <!-- BREAKING -->
@@ -817,9 +1022,11 @@
                     "blue";
 
 
-                setTimeout(function () {
+                setTimeout(function() {
 
                     articleEl.remove();
+
+                    filterArticlesByCategory();
 
                 }, 800);
 
@@ -847,6 +1054,7 @@
     </script>
 
 
+
     <!-- ARTICLE AGE -->
 
     <script>
@@ -857,7 +1065,7 @@
                 .querySelectorAll(
                     "[id^='age-']"
                 )
-                .forEach(function (el) {
+                .forEach(function(el) {
 
                     const ageMinutes =
                         parseInt(
@@ -905,6 +1113,7 @@
         );
 
     </script>
+
 
 
     <!-- APPROVE -->
@@ -977,6 +1186,9 @@
                         )
                         .remove();
 
+
+                    filterArticlesByCategory();
+
                 }
 
                 else {
@@ -1002,6 +1214,7 @@
         }
 
     </script>
+
 
 
     <!-- SAVE ARTICLE -->
@@ -1034,10 +1247,6 @@
                 ).value;
 
 
-            /*
-             * Validate title
-             */
-
             if (!title.trim()) {
 
                 alert(
@@ -1048,10 +1257,6 @@
 
             }
 
-
-            /*
-             * Validate content
-             */
 
             if (!content.trim()) {
 
@@ -1094,36 +1299,38 @@
 
                 if (response.ok) {
 
-                    /*
-                     * Update title
-                     */
 
                     document.getElementById(
                         `title-display-${articleId}`
                     ).innerText = title;
 
 
-                    /*
-                     * Update content
-                     */
-
                     document.getElementById(
                         `content-display-${articleId}`
                     ).innerHTML = content;
 
-
-                    /*
-                     * Update category
-                     */
 
                     document.getElementById(
                         `category-display-${articleId}`
                     ).innerText = category;
 
 
+                    const articleElement =
+                        document.getElementById(
+                            `article-${articleId}`
+                        );
+
+
                     /*
-                     * Update image URL text
+                     * Update category used
+                     * by the filter.
                      */
+
+                    articleElement.setAttribute(
+                        "data-category",
+                        category
+                    );
+
 
                     const imageUrlDisplay =
                         document.getElementById(
@@ -1139,10 +1346,6 @@
                     }
 
 
-                    /*
-                     * Update image
-                     */
-
                     const image =
                         document.getElementById(
                             `image-display-${articleId}`
@@ -1153,7 +1356,8 @@
 
                         if (imageUrl) {
 
-                            image.src = imageUrl;
+                            image.src =
+                                imageUrl;
 
                             image.style.display =
                                 "block";
@@ -1180,12 +1384,6 @@
                         !image
                     ) {
 
-                        const articleElement =
-                            document.getElementById(
-                                `article-${articleId}`
-                            );
-
-
                         const titleElement =
                             document.getElementById(
                                 `title-display-${articleId}`
@@ -1201,13 +1399,17 @@
                         newImage.id =
                             `image-display-${articleId}`;
 
+
                         newImage.src =
                             imageUrl;
 
+
                         newImage.width = 900;
+
 
                         newImage.style.maxWidth =
                             "100%";
+
 
                         newImage.style.height =
                             "auto";
@@ -1221,11 +1423,15 @@
                     }
 
 
+                    toggleEdit(articleId);
+
+
                     /*
-                     * Close edit mode
+                     * Reapply current category
+                     * filter after editing.
                      */
 
-                    toggleEdit(articleId);
+                    filterArticlesByCategory();
 
                 }
 
@@ -1269,6 +1475,7 @@
                     "Save error:",
                     error
                 );
+
 
                 alert(
                     "Could not connect to the server."
