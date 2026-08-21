@@ -30,7 +30,6 @@ ALLOWED_CATEGORIES = (
     "Tech",
     "Sports",
     "Crime",
-    "Uncategorized"
 )
 
 
