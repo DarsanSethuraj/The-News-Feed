@@ -1,14 +1,35 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
+
 from database import SessionLocal
 from models import Client
+
 from Authentication.admin_auth import verify_admin
+
+import json
 
 
 router = APIRouter(
     prefix="/admin/edit_client",
     tags=["Client Management"]
 )
+
+
+# =========================================================
+# HARDCODED CATEGORIES
+# =========================================================
+
+CATEGORIES = [
+    "World",
+    "India",
+    "Kerala",
+    "Entertainment",
+    "Gulf",
+    "Tech",
+    "Sports",
+    "Crime",
+    "Uncategorized"
+]
 
 
 # =========================================================
@@ -30,34 +51,99 @@ def edit_client_page(
             .all()
         )
 
+
         client_data = []
+
 
         for client in clients:
 
-            categories = client.subscribed_categories or ""
+            categories = (
+                client.subscribed_categories
+                or ""
+            )
 
-            if isinstance(categories, str):
+
+            if isinstance(
+                categories,
+                str
+            ):
+
                 categories = [
+
                     category.strip()
-                    for category in categories.split(",")
+
+                    for category
+                    in categories.split(",")
+
                     if category.strip()
+
                 ]
 
+
+            # ---------------------------------------------
+            # Read category limits
+            # ---------------------------------------------
+
+            try:
+
+                category_limits = json.loads(
+                    client.category_limits
+                    or "{}"
+                )
+
+
+                if not isinstance(
+                    category_limits,
+                    dict
+                ):
+
+                    category_limits = {}
+
+
+            except (
+                json.JSONDecodeError,
+                TypeError
+            ):
+
+                category_limits = {}
+
+
             client_data.append({
-                "id": client.id,
-                "name": client.name,
-                "api_key": client.api_key,
-                "allowed_domain": client.allowed_domain,
-                "daily_post_limit": client.daily_post_limit,
-                "subscribed_categories": categories,
-                "active": client.active
+
+                "id":
+                    client.id,
+
+                "name":
+                    client.name,
+
+                "api_key":
+                    client.api_key,
+
+                "allowed_domain":
+                    client.allowed_domain,
+
+                "daily_post_limit":
+                    client.daily_post_limit,
+
+                "subscribed_categories":
+                    categories,
+
+                "category_limits":
+                    category_limits,
+
+                "active":
+                    client.active
+
             })
 
 
-        import json
-
         clients_json = json.dumps(
             client_data
+        )
+
+
+        categories_json = json.dumps(
+            CATEGORIES
         )
 
 
@@ -95,7 +181,7 @@ def edit_client_page(
 
 
         .container {{
-            max-width: 850px;
+            max-width: 900px;
             margin: auto;
         }}
 
@@ -115,7 +201,7 @@ def edit_client_page(
 
 
         .field {{
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }}
 
 
@@ -152,22 +238,50 @@ def edit_client_page(
 
         .categories {{
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
             margin-top: 10px;
         }}
 
 
-        .category {{
-            padding: 11px;
+        .category-row {{
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
             background: #f5f5f5;
             border-radius: 6px;
+        }}
+
+
+        .category-row:hover {{
+            background: #e9e9e9;
+        }}
+
+
+        .category-checkbox {{
+            width: 17px;
+            height: 17px;
             cursor: pointer;
         }}
 
 
-        .category:hover {{
-            background: #e9e9e9;
+        .category-name {{
+            flex: 1;
+            font-weight: 500;
+        }}
+
+
+        .category-limit {{
+            width: 90px !important;
+            padding: 8px !important;
+        }}
+
+
+        .limit-label {{
+            font-size: 12px;
+            color: #666;
+            white-space: nowrap;
         }}
 
 
@@ -227,7 +341,7 @@ def edit_client_page(
 
 
             .categories {{
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
             }}
 
         }}
@@ -255,7 +369,6 @@ def edit_client_page(
                 Select Client
             </label>
 
-
             <select
                 id="client_id"
                 onchange="loadClient()"
@@ -272,10 +385,13 @@ def edit_client_page(
 
         <!-- EDIT FORM -->
 
-        <div id="edit-form" style="display:none;">
+        <div
+            id="edit-form"
+            style="display:none;"
+        >
 
 
-            <!-- CLIENT NAME -->
+            <!-- NAME -->
 
             <div class="field">
 
@@ -305,7 +421,8 @@ def edit_client_page(
                 >
 
                 <span class="help-text">
-                    Changing this will invalidate the old API key.
+                    Changing this will invalidate
+                    the old API key.
                 </span>
 
             </div>
@@ -341,6 +458,11 @@ def edit_client_page(
                     min="1"
                 >
 
+                <span class="help-text">
+                    Overall normal-news limit.
+                    Breaking news can exceed this limit.
+                </span>
+
             </div>
 
 
@@ -352,119 +474,17 @@ def edit_client_page(
                     Subscribed Categories
                 </label>
 
-
-                <div class="categories">
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="World"
-                        >
-
-                        World
-
-                    </label>
+                <span class="help-text">
+                    Select the categories this client
+                    can receive. Set a limit to restrict
+                    normal posts from that category.
+                </span>
 
 
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="India"
-                        >
-
-                        India
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Kerala"
-                        >
-
-                        Kerala
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Entertainment"
-                        >
-
-                        Entertainment
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Gulf"
-                        >
-
-                        Gulf
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Tech"
-                        >
-
-                        Tech
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Sports"
-                        >
-
-                        Sports
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Crime"
-                        >
-
-                        Crime
-
-                    </label>
-
-
-                    <label class="category">
-
-                        <input
-                            type="checkbox"
-                            value="Uncategorized"
-                        >
-
-                        Uncategorized
-
-                    </label>
-
-
-                </div>
+                <div
+                    class="categories"
+                    id="categories"
+                ></div>
 
             </div>
 
@@ -506,15 +526,105 @@ def edit_client_page(
 </div>
 
 
-
 <script>
 
 
 const clients = {clients_json};
 
+const categories = {categories_json};
+
 
 // =========================================================
-// LOAD CLIENT DROPDOWN
+// CREATE CATEGORY UI
+// =========================================================
+
+function createCategoryFields() {{
+
+    const container =
+        document.getElementById(
+            "categories"
+        );
+
+
+    categories.forEach(category => {{
+
+        const row =
+            document.createElement(
+                "div"
+            );
+
+
+        row.className =
+            "category-row";
+
+
+        row.innerHTML = `
+
+            <input
+                type="checkbox"
+                class="category-checkbox"
+                value="${{category}}"
+            >
+
+            <span class="category-name">
+                ${{category}}
+            </span>
+
+            <span class="limit-label">
+                Limit:
+            </span>
+
+            <input
+                type="number"
+                class="category-limit"
+                data-category="${{category}}"
+                min="1"
+                placeholder="None"
+                disabled
+            >
+
+        `;
+
+
+        const checkbox =
+            row.querySelector(
+                ".category-checkbox"
+            );
+
+
+        const limitInput =
+            row.querySelector(
+                ".category-limit"
+            );
+
+
+        checkbox.addEventListener(
+            "change",
+            function() {{
+
+                limitInput.disabled =
+                    !checkbox.checked;
+
+
+                if (!checkbox.checked) {{
+
+                    limitInput.value = "";
+
+                }}
+
+            }}
+        );
+
+
+        container.appendChild(row);
+
+    }});
+
+}}
+
+
+// =========================================================
+// POPULATE CLIENT DROPDOWN
 // =========================================================
 
 function populateClients() {{
@@ -533,7 +643,8 @@ function populateClients() {{
             );
 
 
-        option.value = client.id;
+        option.value =
+            client.id;
 
 
         option.textContent =
@@ -542,23 +653,26 @@ function populateClients() {{
             client.allowed_domain;
 
 
-        select.appendChild(option);
+        select.appendChild(
+            option
+        );
 
     }});
 
 }}
 
 
-
 // =========================================================
-// LOAD SELECTED CLIENT
+// LOAD CLIENT
 // =========================================================
 
 function loadClient() {{
 
     const clientId =
         document
-            .getElementById("client_id")
+            .getElementById(
+                "client_id"
+            )
             .value;
 
 
@@ -570,7 +684,8 @@ function loadClient() {{
 
     if (!clientId) {{
 
-        form.style.display = "none";
+        form.style.display =
+            "none";
 
         return;
 
@@ -579,18 +694,25 @@ function loadClient() {{
 
     const client =
         clients.find(
-            c => String(c.id) === String(clientId)
+            c =>
+                String(c.id)
+                === String(clientId)
         );
 
 
     if (!client) {{
 
-        form.style.display = "none";
+        form.style.display =
+            "none";
 
         return;
 
     }}
 
+
+    // -----------------------------------------------------
+    // Basic fields
+    // -----------------------------------------------------
 
     document
         .getElementById("name")
@@ -622,50 +744,203 @@ function loadClient() {{
         client.active === true;
 
 
-    // Clear categories first
+    // -----------------------------------------------------
+    // Clear category fields
+    // -----------------------------------------------------
 
     document
         .querySelectorAll(
-            '.category input[type="checkbox"]'
+            ".category-row"
         )
-        .forEach(
-            checkbox => {{
-                checkbox.checked = false;
-            }}
-        );
+        .forEach(row => {{
+
+            const checkbox =
+                row.querySelector(
+                    ".category-checkbox"
+                );
 
 
-    // Select client's categories
+            const limit =
+                row.querySelector(
+                    ".category-limit"
+                );
 
-    const categories =
-        client.subscribed_categories || [];
+
+            checkbox.checked =
+                false;
+
+
+            limit.value =
+                "";
+
+
+            limit.disabled =
+                true;
+
+        }});
+
+
+    // -----------------------------------------------------
+    // Load subscribed categories
+    // -----------------------------------------------------
+
+    const subscribed =
+        client.subscribed_categories
+        || [];
+
+
+    const limits =
+        client.category_limits
+        || {};
 
 
     document
         .querySelectorAll(
-            '.category input[type="checkbox"]'
+            ".category-row"
         )
-        .forEach(
-            checkbox => {{
+        .forEach(row => {{
+
+            const checkbox =
+                row.querySelector(
+                    ".category-checkbox"
+                );
+
+
+            const limitInput =
+                row.querySelector(
+                    ".category-limit"
+                );
+
+
+            const category =
+                checkbox.value;
+
+
+            if (
+                subscribed.includes(
+                    category
+                )
+            ) {{
 
                 checkbox.checked =
-                    categories.includes(
-                        checkbox.value
-                    );
+                    true;
+
+
+                limitInput.disabled =
+                    false;
+
+
+                if (
+                    limits[category] !== undefined
+                ) {{
+
+                    limitInput.value =
+                        limits[category];
+
+                }}
 
             }}
-        );
+
+        }});
 
 
-    form.style.display = "block";
+    form.style.display =
+        "block";
 
 
     document
         .getElementById("result")
-        .style.display = "none";
+        .style.display =
+        "none";
 
 }}
 
+
+// =========================================================
+// GET CATEGORY DATA
+// =========================================================
+
+function getCategoryData() {{
+
+    const selectedCategories = [];
+
+    const categoryLimits = {};
+
+
+    document
+        .querySelectorAll(
+            ".category-row"
+        )
+        .forEach(row => {{
+
+            const checkbox =
+                row.querySelector(
+                    ".category-checkbox"
+                );
+
+
+            const limitInput =
+                row.querySelector(
+                    ".category-limit"
+                );
+
+
+            if (!checkbox.checked) {{
+                return;
+            }}
+
+
+            const category =
+                checkbox.value;
+
+
+            selectedCategories.push(
+                category
+            );
+
+
+            const limit =
+                limitInput.value.trim();
+
+
+            if (limit !== "") {{
+
+                const numericLimit =
+                    parseInt(limit);
+
+
+                if (
+                    !numericLimit ||
+                    numericLimit < 1
+                ) {{
+
+                    throw new Error(
+                        category +
+                        " must have a valid limit."
+                    );
+
+                }}
+
+
+                categoryLimits[category] =
+                    numericLimit;
+
+            }}
+
+        }});
+
+
+    return {{
+
+        categories:
+            selectedCategories,
+
+        limits:
+            categoryLimits
+
+    }};
+
+}}
 
 
 // =========================================================
@@ -676,7 +951,9 @@ async function updateClient() {{
 
     const clientId =
         document
-            .getElementById("client_id")
+            .getElementById(
+                "client_id"
+            )
             .value;
 
 
@@ -715,7 +992,9 @@ async function updateClient() {{
     const dailyLimit =
         parseInt(
             document
-                .getElementById("daily_limit")
+                .getElementById(
+                    "daily_limit"
+                )
                 .value
         );
 
@@ -725,20 +1004,6 @@ async function updateClient() {{
             .getElementById("active")
             .checked;
 
-
-    const categories =
-        Array.from(
-            document.querySelectorAll(
-                '.category input[type="checkbox"]:checked'
-            )
-        ).map(
-            checkbox => checkbox.value
-        );
-
-
-    // -----------------------------------------------------
-    // VALIDATION
-    // -----------------------------------------------------
 
     if (!name) {{
 
@@ -773,7 +1038,10 @@ async function updateClient() {{
     }}
 
 
-    if (!dailyLimit || dailyLimit < 1) {{
+    if (
+        !dailyLimit ||
+        dailyLimit < 1
+    ) {{
 
         alert(
             "Please enter a valid daily post limit."
@@ -784,7 +1052,27 @@ async function updateClient() {{
     }}
 
 
-    if (categories.length === 0) {{
+    let categoryData;
+
+
+    try {{
+
+        categoryData =
+            getCategoryData();
+
+    }}
+    catch (error) {{
+
+        alert(error.message);
+
+        return;
+
+    }}
+
+
+    if (
+        categoryData.categories.length === 0
+    ) {{
 
         alert(
             "Please select at least one category."
@@ -801,7 +1089,9 @@ async function updateClient() {{
         );
 
 
-    button.disabled = true;
+    button.disabled =
+        true;
+
 
     button.innerText =
         "Saving...";
@@ -828,17 +1118,23 @@ async function updateClient() {{
 
                         name: name,
 
-                        api_key: apiKey,
+                        api_key:
+                            apiKey,
 
-                        allowed_domain: domain,
+                        allowed_domain:
+                            domain,
 
                         daily_post_limit:
                             dailyLimit,
 
                         subscribed_categories:
-                            categories,
+                            categoryData.categories,
 
-                        active: active
+                        category_limits:
+                            categoryData.limits,
+
+                        active:
+                            active
 
                     }})
 
@@ -856,12 +1152,14 @@ async function updateClient() {{
             );
 
 
-        result.style.display = "block";
+        result.style.display =
+            "block";
 
 
         if (!response.ok) {{
 
-            result.className = "error";
+            result.className =
+                "error";
 
 
             result.innerHTML =
@@ -877,20 +1175,25 @@ async function updateClient() {{
         }}
 
 
-        result.className = "success";
+        result.className =
+            "success";
 
 
         result.innerHTML =
-            "<strong>Client updated successfully.</strong>";
+            "<strong>" +
+            "Client updated successfully." +
+            "</strong>";
 
 
-        // Update local client data
+        // -------------------------------------------------
+        // Update local data
+        // -------------------------------------------------
 
         const index =
             clients.findIndex(
                 c =>
-                    String(c.id) ===
-                    String(clientId)
+                    String(c.id)
+                    === String(clientId)
             );
 
 
@@ -901,26 +1204,35 @@ async function updateClient() {{
                 id:
                     Number(clientId),
 
-                name: name,
+                name:
+                    name,
 
-                api_key: apiKey,
+                api_key:
+                    apiKey,
 
-                allowed_domain: domain,
+                allowed_domain:
+                    domain,
 
                 daily_post_limit:
                     dailyLimit,
 
                 subscribed_categories:
-                    categories,
+                    categoryData.categories,
 
-                active: active
+                category_limits:
+                    categoryData.limits,
+
+                active:
+                    active
 
             }};
 
         }}
 
 
-        // Update dropdown text
+        // -------------------------------------------------
+        // Update dropdown
+        // -------------------------------------------------
 
         const option =
             document.querySelector(
@@ -939,9 +1251,7 @@ async function updateClient() {{
 
         }}
 
-
     }}
-
     catch (error) {{
 
         const result =
@@ -950,9 +1260,12 @@ async function updateClient() {{
             );
 
 
-        result.style.display = "block";
+        result.style.display =
+            "block";
 
-        result.className = "error";
+
+        result.className =
+            "error";
 
 
         result.innerHTML =
@@ -960,10 +1273,11 @@ async function updateClient() {{
             "Could not connect to the server.";
 
     }}
-
     finally {{
 
-        button.disabled = false;
+        button.disabled =
+            false;
+
 
         button.innerText =
             "Save Changes";
@@ -976,6 +1290,8 @@ async function updateClient() {{
 // =========================================================
 // START
 // =========================================================
+
+createCategoryFields();
 
 populateClients();
 
@@ -1009,12 +1325,21 @@ def update_client(
 
     try:
 
+        # =================================================
+        # FIND CLIENT
+        # =================================================
+
         client = (
+
             db.query(Client)
+
             .filter(
-                Client.id == client_id
+                Client.id
+                == client_id
             )
+
             .first()
+
         )
 
 
@@ -1026,9 +1351,9 @@ def update_client(
             )
 
 
-        # -------------------------------------------------
-        # Get values
-        # -------------------------------------------------
+        # =================================================
+        # GET VALUES
+        # =================================================
 
         name = str(
             client_data.get(
@@ -1063,17 +1388,32 @@ def update_client(
         )
 
 
-        daily_limit = int(
-            client_data.get(
-                "daily_post_limit",
-                0
+        try:
+
+            daily_limit = int(
+                client_data.get(
+                    "daily_post_limit",
+                    0
+                )
             )
-        )
+
+        except (
+            ValueError,
+            TypeError
+        ):
+
+            daily_limit = 0
 
 
         categories = client_data.get(
             "subscribed_categories",
             []
+        )
+
+
+        category_limits = client_data.get(
+            "category_limits",
+            {}
         )
 
 
@@ -1085,9 +1425,9 @@ def update_client(
         )
 
 
-        # -------------------------------------------------
-        # Validation
-        # -------------------------------------------------
+        # =================================================
+        # VALIDATION
+        # =================================================
 
         if not name:
 
@@ -1135,19 +1475,124 @@ def update_client(
             )
 
 
-        # -------------------------------------------------
-        # Check duplicate domain
-        #
-        # Exclude the current client.
-        # -------------------------------------------------
+        # =================================================
+        # VALIDATE CATEGORIES
+        # =================================================
+
+        invalid_categories = [
+
+            category
+
+            for category in categories
+
+            if category not in CATEGORIES
+
+        ]
+
+
+        if invalid_categories:
+
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Invalid categories: "
+                    + ", ".join(
+                        invalid_categories
+                    )
+                )
+            )
+
+
+        # =================================================
+        # VALIDATE CATEGORY LIMITS
+        # =================================================
+
+        if not isinstance(
+            category_limits,
+            dict
+        ):
+
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid category limits."
+            )
+
+
+        for category, limit in category_limits.items():
+
+            if category not in CATEGORIES:
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Invalid category limit: "
+                        f"{category}"
+                    )
+                )
+
+
+            if category not in categories:
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Category limit specified "
+                        f"for unsubscribed category: "
+                        f"{category}"
+                    )
+                )
+
+
+            try:
+
+                limit = int(limit)
+
+            except (
+                ValueError,
+                TypeError
+            ):
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Invalid limit for "
+                        f"{category}."
+                    )
+                )
+
+
+            if limit < 1:
+
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Category limit for "
+                        f"{category} must be "
+                        f"at least 1."
+                    )
+                )
+
+
+        # =================================================
+        # CHECK DUPLICATE DOMAIN
+        # =================================================
 
         duplicate_domain = (
+
             db.query(Client)
+
             .filter(
-                Client.allowed_domain == domain,
-                Client.id != client_id
+
+                Client.allowed_domain
+                == domain,
+
+                Client.id
+                != client_id
+
             )
+
             .first()
+
         )
 
 
@@ -1162,19 +1607,26 @@ def update_client(
             )
 
 
-        # -------------------------------------------------
-        # Check duplicate API key
-        #
-        # Exclude the current client.
-        # -------------------------------------------------
+        # =================================================
+        # CHECK DUPLICATE API KEY
+        # =================================================
 
         duplicate_api_key = (
+
             db.query(Client)
+
             .filter(
-                Client.api_key == api_key,
-                Client.id != client_id
+
+                Client.api_key
+                == api_key,
+
+                Client.id
+                != client_id
+
             )
+
             .first()
+
         )
 
 
@@ -1189,9 +1641,9 @@ def update_client(
             )
 
 
-        # -------------------------------------------------
-        # Update client
-        # -------------------------------------------------
+        # =================================================
+        # SAVE
+        # =================================================
 
         client.name = name
 
@@ -1201,8 +1653,14 @@ def update_client(
 
         client.daily_post_limit = daily_limit
 
-        client.subscribed_categories = ",".join(
-            categories
+        client.subscribed_categories = (
+            ",".join(categories)
+        )
+
+        client.category_limits = (
+            json.dumps(
+                category_limits
+            )
         )
 
         client.active = active
@@ -1212,6 +1670,10 @@ def update_client(
 
         db.refresh(client)
 
+
+        # =================================================
+        # RESPONSE
+        # =================================================
 
         return {
 
@@ -1235,6 +1697,9 @@ def update_client(
 
             "subscribed_categories":
                 client.subscribed_categories,
+
+            "category_limits":
+                category_limits,
 
             "active":
                 client.active
