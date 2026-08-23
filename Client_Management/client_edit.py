@@ -864,7 +864,7 @@ function getCategoryData() {{
 
     const selectedCategories = [];
 
-    const categoryLimits = {};
+    const categoryLimits = {{}};
 
 
     document
