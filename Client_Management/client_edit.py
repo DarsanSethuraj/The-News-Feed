@@ -791,7 +791,7 @@ function loadClient() {{
 
     const limits =
         client.category_limits
-        || {};
+        || {{}};
 
 
     document
