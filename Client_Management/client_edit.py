@@ -28,7 +28,6 @@ CATEGORIES = [
     "Tech",
     "Sports",
     "Crime",
-    "Uncategorized"
 ]
 
 
