@@ -40,13 +40,41 @@ class Client(Base):
     api_key = Column(String, unique=True)
     allowed_domain = Column(String, nullable=False)
 
+    # Overall daily package limit
     daily_post_limit = Column(Integer, nullable=False)
-    subscribed_categories = Column(String, default="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime,Uncategorized")
+
+    # Categories this client can receive
+    subscribed_categories = Column(
+        String,
+        default="World,India,Kerala,Entertainment,Gulf,Tech,Sports,Crime,Uncategorized"
+    )
+
+    # Per-category normal-news limits
+    #
+    # Example:
+    # {
+    #     "Entertainment": 8,
+    #     "Kerala": 10,
+    #     "India": 10
+    # }
+    #
+    # A category not present here has no category-specific limit.
+    category_limits = Column(
+        Text,
+        default="{}"
+    )
 
     active = Column(Boolean, default=True)
-    activated_at = Column(DateTime, default=lambda: datetime.now(IST))
 
-    last_feed_request = Column(DateTime, nullable=True) # for API response optimization
+    activated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(IST)
+    )
+
+    last_feed_request = Column(
+        DateTime,
+        nullable=True
+    )
 
 class DeliveryLog(Base):
     __tablename__ = "delivery_logs"
@@ -95,10 +123,21 @@ class CreateArticleRequest(BaseModel):
 
 from typing import List
 
+from typing import List, Dict
+
+
 class ClientCreate(BaseModel):
+
     name: str
+
     api_key: str | None = None
+
     allowed_domain: str
+
     daily_post_limit: int
+
     subscribed_categories: List[str]
+
+    category_limits: Dict[str, int] = {}
+
     active: bool = True
