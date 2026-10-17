@@ -10,3 +10,4 @@ sqlalchemy
 alembic
 jinja2
 python-multipart
+openai

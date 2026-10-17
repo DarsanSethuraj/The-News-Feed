@@ -61,3 +61,5 @@ app.include_router(create_article_router)
 app.include_router(client_management_router)
 
 app.include_router(edit_client_router)
+
+app.include_router(rewrite_article_router)
