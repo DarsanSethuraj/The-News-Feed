@@ -30,6 +30,8 @@ from Client_Management.client_creation import router as client_management_router
 
 from Client_Management.client_edit import router as edit_client_router
 
+from Article_Management.rewrite_article import router as rewrite_article_router
+
 
 app = FastAPI()
 
