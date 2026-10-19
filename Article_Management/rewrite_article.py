@@ -108,8 +108,7 @@ def validate_result(data: Any) -> dict:
     for tag in soup.find_all(
         [
             "script", "style", "iframe", "object",
-            "embed", "form", "svg", "math",
-        ]
+            "embed", "form", "svg", "math",]
     ):
         tag.decompose()
 
@@ -133,7 +132,7 @@ def validate_result(data: Any) -> dict:
 
 
 def _get_api_keys() -> list[str]:
-    """Read configured keys without logging or exposing their values."""
+    """Read configured keys without exposing their values."""
 
     configured_keys = [
         os.getenv("GEMINI_API_KEY_1"),
@@ -141,7 +140,8 @@ def _get_api_keys() -> list[str]:
         os.getenv("GEMINI_API_KEY_3"),
     ]
 
-    # Keep compatibility with the previous single-key configuration.
+    # Use the legacy single-key setting only if none of the
+    # numbered keys is configured.
     if not any(
         key and key.strip()
         for key in configured_keys
@@ -157,7 +157,7 @@ def _get_api_keys() -> list[str]:
 
 
 def _is_quota_error(exc: Exception) -> bool:
-    """Identify quota/rate-limit failures that should not trigger key rotation."""
+    """Identify quota and rate-limit errors for key failover."""
 
     code = getattr(exc, "code", None)
     status_code = getattr(exc, "status_code", None)
@@ -186,7 +186,13 @@ def generate_with_key_failover(
     user_input: str,
     instructions: str,
 ):
-    """Try configured credentials for retryable non-quota failures."""
+    """
+    Try configured Gemini credentials in order.
+
+    Quota errors move to the next key. Invalid request or model
+    errors stop immediately because changing credentials will
+    generally not fix them.
+    """
 
     api_keys = _get_api_keys()
 
@@ -214,15 +220,17 @@ def generate_with_key_failover(
             )
 
             if not response.text or not response.text.strip():
-                raise ValueError("Gemini returned an empty response.")
+                raise ValueError(
+                    "Gemini returned an empty response."
+                )
 
             logging.info(
                 "Gemini rewrite succeeded using key slot %s.",
                 index,
             )
+
             return response
 
-        
         except Exception as exc:
             if _is_quota_error(exc):
                 failures.append(
@@ -234,8 +242,8 @@ def generate_with_key_failover(
                     "trying the next configured key.",
                     index,
                 )
-                continue
 
+                continue
 
             code = (
                 getattr(exc, "code", None)
@@ -243,18 +251,21 @@ def generate_with_key_failover(
             )
             message = str(exc).lower()
 
-            # Invalid input/model configuration is not fixed by another key.
+            # Invalid request/model errors are not fixed by rotating keys.
             if (
                 code == 400
                 or "invalid_argument" in message
                 or "model not found" in message
                 or "not_found" in message
             ):
-                logging.exception(
+                logging.error(
                     "Gemini request/model configuration failed "
-                    "on key slot %s.",
+                    "on key slot %s (code=%s, type=%s).",
                     index,
+                    code,
+                    type(exc).__name__,
                 )
+
                 raise HTTPException(
                     status_code=502,
                     detail=(
@@ -279,6 +290,20 @@ def generate_with_key_failover(
         "All configured Gemini key slots failed: %s",
         failures,
     )
+
+    # Return 429 only when every attempted key failed specifically
+    # because of quota/rate limits.
+    if failures and all(
+        code == 429 and error_type == "QuotaOrRateLimit"
+        for _, code, error_type in failures
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "All configured Gemini accounts have reached their "
+                "rate or quota limits. Try again after quota reset."
+            ),
+        )
 
     raise HTTPException(
         status_code=502,
