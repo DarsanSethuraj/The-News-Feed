@@ -10,3 +10,7 @@ sqlalchemy
 alembic
 jinja2
 python-multipart
+openai
+google-genai
+psycopg2-binary
+psycopg[binary]

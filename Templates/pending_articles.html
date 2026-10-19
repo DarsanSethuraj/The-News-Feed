@@ -247,10 +247,96 @@
                 ✎
             </button>
 
+                        <!-- AI REWRITE BUTTON -->
+
+            <button
+                type="button"
+                id="rewrite-button-{{ article.id }}"
+                onclick="rewriteArticle({{ article.id }})"
+                style="
+                    padding:10px 16px;
+                    border:none;
+                    border-radius:8px;
+                    background:#6f42c1;
+                    color:white;
+                    font-weight:bold;
+                    cursor:pointer;
+                "
+            >
+                ✨ Rewrite with AI
+            </button>
+
         </div>
 
 
+        <!-- AI REWRITE RESULTS PANEL -->
+        <div id="rewrite-panel-{{ article.id }}"
+            style="display: none; margin: 15px 0; padding: 16px; border: 1px solid #6366f1; border-radius: 10px; background: #f8faff;">
 
+            <h3 style="margin: 0 0 12px; color: #4338ca;">
+                ✨ AI Rewrite Results
+            </h3>
+
+            <p id="rewrite-status-{{ article.id }}"
+            style="margin-bottom: 12px; color: #555;">
+                Select a headline and review the rewritten article below.
+            </p>
+
+            <!-- FOUR ALTERNATIVE TITLES -->
+            <div style="margin-bottom: 16px;">
+                <h4 style="margin-bottom: 8px;">Choose a headline</h4>
+
+                <div id="rewrite-titles-{{ article.id }}"
+                    style="display: flex; flex-direction: column; gap: 8px;">
+                </div>
+            </div>
+
+            <!-- REWRITTEN ARTICLE PREVIEW -->
+            <div style="margin-bottom: 14px;">
+                <h4 style="margin-bottom: 8px;">Rewritten article preview</h4>
+
+                <textarea
+                    id="rewrite-preview-{{ article.id }}"
+                    rows="14"
+                    placeholder="The rewritten article will appear here..."
+                    style="width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 13px; resize: vertical;"
+                ></textarea>
+
+                <small style="display: block; margin-top: 6px; color: #666;">
+                    Review the content before applying it to the edit form.
+                </small>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+
+                <button
+                    type="button"
+                    id="apply-rewrite-{{ article.id }}"
+                    onclick="applyRewrite({{ article.id }})"
+                    disabled
+                    style="padding: 9px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    Apply Rewrite
+                </button>
+
+                <button
+                    type="button"
+                    onclick="closeRewritePanel({{ article.id }})"
+                    style="padding: 9px 16px; background: #e5e7eb; color: #111827; border: none; border-radius: 6px; cursor: pointer;">
+                    Cancel
+                </button>
+
+            </div>
+
+            <p style="margin: 12px 0 0; font-size: 12px; color: #666;">
+                Applying the rewrite only fills the edit fields. You must still click
+                <strong>Save Changes</strong> to save it. The article will not be
+                automatically approved or published.
+            </p>
+
+        </div>
+        <!-- END AI REWRITE RESULTS PANEL -->
+        
         <!-- ARTICLE AGE -->
 
         <p
@@ -1485,6 +1571,213 @@
 
         }
 
+    </script>
+
+    <!-- AI ARTICLE REWRITE -->
+
+    <script>
+        // Keep results in memory for the current page session.
+        const rewriteResults = {};
+        const rewritingArticles = new Set();
+
+        async function rewriteArticle(articleId) {
+            const panel = document.getElementById(
+                `rewrite-panel-${articleId}`
+            );
+            const button = document.getElementById(
+                `rewrite-button-${articleId}`
+            );
+            const status = document.getElementById(
+                `rewrite-status-${articleId}`
+            );
+
+            panel.style.display = "block";
+
+            // Reuse results instead of paying for another API request.
+            if (rewriteResults[articleId]) {
+                displayRewriteResults(
+                    articleId,
+                    rewriteResults[articleId]
+                );
+                return;
+            }
+
+            // Prevent duplicate simultaneous requests.
+            if (rewritingArticles.has(articleId)) {
+                return;
+            }
+
+            rewritingArticles.add(articleId);
+            button.disabled = true;
+            button.textContent = "⏳ Rewriting...";
+            status.textContent =
+                "Rewriting the article and generating four headlines...";
+
+            try {
+                const response = await fetch(
+                    `/admin/rewrite/${articleId}`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Accept": "application/json"
+                        },
+                        credentials: "same-origin"
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.detail || "The rewrite request failed."
+                    );
+                }
+
+                if (
+                    !Array.isArray(data.titles) ||
+                    data.titles.length !== 4 ||
+                    !data.titles.every(
+                        title =>
+                            typeof title === "string" &&
+                            title.trim()
+                    ) ||
+                    typeof data.content !== "string" ||
+                    !data.content.trim()
+                ) {
+                    throw new Error(
+                        "The server returned an invalid rewrite result."
+                    );
+                }
+
+                rewriteResults[articleId] = {
+                    titles: data.titles,
+                    content: data.content
+                };
+
+                displayRewriteResults(
+                    articleId,
+                    rewriteResults[articleId]
+                );
+
+            } catch (error) {
+                status.textContent =
+                    "Rewrite failed: " + error.message;
+
+                console.error("AI rewrite error:", error);
+
+            } finally {
+                rewritingArticles.delete(articleId);
+                button.disabled = false;
+                button.textContent = "✨ Rewrite with AI";
+            }
+        }
+
+
+        function displayRewriteResults(articleId, result) {
+            const status = document.getElementById(
+                `rewrite-status-${articleId}`
+            );
+            const titlesContainer = document.getElementById(
+                `rewrite-titles-${articleId}`
+            );
+            const preview = document.getElementById(
+                `rewrite-preview-${articleId}`
+            );
+            const applyButton = document.getElementById(
+                `apply-rewrite-${articleId}`
+            );
+
+            titlesContainer.replaceChildren();
+
+            result.titles.forEach((title, index) => {
+                const label = document.createElement("label");
+                label.style.cssText =
+                    "display:flex;gap:10px;align-items:flex-start;" +
+                    "padding:10px;border:1px solid #ddd;" +
+                    "border-radius:6px;background:white;cursor:pointer;";
+
+                const radio = document.createElement("input");
+                radio.type = "radio";
+                radio.name = `rewrite-title-${articleId}`;
+                radio.value = String(index);
+                radio.checked = index === 0;
+                radio.style.marginTop = "5px";
+
+                const titleText = document.createElement("span");
+                titleText.textContent = title;
+
+                radio.addEventListener("change", function () {
+                    // The article content stays the same when
+                    // the user changes only the headline.
+                });
+
+                label.append(radio, titleText);
+                titlesContainer.appendChild(label);
+            });
+
+            preview.value = result.content;
+            status.textContent =
+                "Choose one of the four headlines and review the rewritten content.";
+
+            applyButton.disabled = false;
+        }
+
+
+        function applyRewrite(articleId) {
+            const selectedTitle = document.querySelector(
+                `input[name="rewrite-title-${articleId}"]:checked`
+            );
+
+            if (!selectedTitle) {
+                alert("Please select a headline.");
+                return;
+            }
+
+            const result = rewriteResults[articleId];
+
+            if (!result) {
+                alert("No rewrite result is available.");
+                return;
+            }
+
+            const title = result.titles[
+                Number(selectedTitle.value)
+            ];
+
+            const preview = document.getElementById(
+                `rewrite-preview-${articleId}`
+            );
+
+            const titleEditor = document.getElementById(
+                `title-editor-${articleId}`
+            );
+
+            const contentEditor = document.getElementById(
+                `content-editor-${articleId}`
+            );
+
+            // Apply the chosen title and preview content to the
+            // existing edit fields. Do not save automatically.
+            titleEditor.value = title;
+            contentEditor.value = preview.value;
+
+            const editForm = document.getElementById(
+                `edit-form-${articleId}`
+            );
+
+            if (editForm.style.display === "none") {
+                toggleEdit(articleId);
+            }
+
+            closeRewritePanel(articleId);
+        }
+
+
+        function closeRewritePanel(articleId) {
+            document.getElementById(
+                `rewrite-panel-${articleId}`
+            ).style.display = "none";
+        }
     </script>
 
 
