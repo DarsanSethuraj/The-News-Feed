@@ -222,20 +222,20 @@ def generate_with_key_failover(
             )
             return response
 
+        
         except Exception as exc:
             if _is_quota_error(exc):
+                failures.append(
+                    (index, 429, "QuotaOrRateLimit")
+                )
+
                 logging.warning(
                     "Gemini quota/rate limit reached on key slot %s; "
-                    "not rotating keys for this error.",
+                    "trying the next configured key.",
                     index,
                 )
-                raise HTTPException(
-                    status_code=429,
-                    detail=(
-                        "Gemini rate or quota limit reached. "
-                        "Check the project's quota and retry after reset."
-                    ),
-                ) from exc
+                continue
+
 
             code = (
                 getattr(exc, "code", None)
