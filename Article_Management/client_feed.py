@@ -197,6 +197,7 @@ def client_feed(
         # =================================================
 
         now = datetime.now(IST)
+        freshness_cutoff = now - timedelta(hours=4)
 
 
         # =================================================
@@ -291,28 +292,25 @@ def client_feed(
         # Determine Client Plan
         # =================================================
 
-        if client.daily_post_limit == 25:
+        # Determine Client Plan from custom daily limit
 
-            tier_filter = (
-                Article.show_25 == True
-            )
+        daily_limit = client.daily_post_limit
 
-        elif client.daily_post_limit == 50:
+        if 0 <= daily_limit <= 25:
+            tier_filter = Article.show_25 == True
 
-            tier_filter = (
-                Article.show_50 == True
-            )
+        elif 25 < daily_limit <= 50:
+            tier_filter = Article.show_50 == True
 
-        elif client.daily_post_limit == 100:
-
-            tier_filter = (
-                Article.show_100 == True
-            )
+        elif 50 < daily_limit <= 100:
+            tier_filter = Article.show_100 == True
 
         else:
-
             return {
-                "error": "Invalid client plan"
+                "error": (
+                    "Invalid daily post limit. "
+                    "Allowed range is 0–100."
+                )
             }
 
 
@@ -363,8 +361,7 @@ def client_feed(
                     allowed_categories
                 ),
 
-                Article.created_at
-                >= today_start,
+                Article.created_at >= freshness_cutoff,
 
                 ~Article.id.in_(
                     delivered_subquery
@@ -600,8 +597,9 @@ def client_feed(
                         Article.category
                         == category,
 
-                        Article.created_at
-                        >= client.activated_at,
+                        Article.created_at >= freshness_cutoff,
+                        
+                        Article.created_at >= client.activated_at,
 
                         Article.is_breaking
                         == False,
