@@ -132,21 +132,15 @@ def validate_result(data: Any) -> dict:
 
 
 def _get_api_keys() -> list[str]:
-    """Read configured keys without exposing their values."""
+    """Read up to five configured Gemini keys safely."""
 
     configured_keys = [
         os.getenv("GEMINI_API_KEY_1"),
         os.getenv("GEMINI_API_KEY_2"),
         os.getenv("GEMINI_API_KEY_3"),
+        os.getenv("GEMINI_API_KEY_4"),
+        os.getenv("GEMINI_API_KEY_5"),
     ]
-
-    # Use the legacy single-key setting only if none of the
-    # numbered keys is configured.
-    if not any(
-        key and key.strip()
-        for key in configured_keys
-    ):
-        configured_keys = [os.getenv("GEMINI_API_KEY")]
 
     # Remove empty and duplicate keys.
     return list(dict.fromkeys(
