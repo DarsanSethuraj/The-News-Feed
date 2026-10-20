@@ -132,7 +132,7 @@ def validate_result(data: Any) -> dict:
 
 
 def _get_api_keys() -> list[str]:
-    """Read up to five configured Gemini keys safely."""
+    """Read up to six configured Gemini keys safely."""
 
     configured_keys = [
         os.getenv("GEMINI_API_KEY_1"),
@@ -140,6 +140,7 @@ def _get_api_keys() -> list[str]:
         os.getenv("GEMINI_API_KEY_3"),
         os.getenv("GEMINI_API_KEY_4"),
         os.getenv("GEMINI_API_KEY_5"),
+        os.getenv("GEMINI_API_KEY_6"),
     ]
 
     # Remove empty and duplicate keys.
