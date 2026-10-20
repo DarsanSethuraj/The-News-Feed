@@ -1625,7 +1625,27 @@
                     }
                 );
 
-                const data = await response.json();
+                const responseText = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(responseText);
+                } catch (error) {
+                    const contentType =
+                        response.headers.get("content-type") || "unknown";
+
+                    console.error("Rewrite returned non-JSON:", {
+                        status: response.status,
+                        contentType,
+                        body: responseText.slice(0, 500)
+                    });
+
+                    throw new Error(
+                        `Server returned non-JSON (HTTP ${response.status}, ` +
+                        `content type: ${contentType}). ` +
+                        `Check backend and proxy logs.`
+                    );
+                }
 
                 if (!response.ok) {
                     throw new Error(
