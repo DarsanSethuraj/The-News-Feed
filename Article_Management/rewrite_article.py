@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -108,7 +107,8 @@ def validate_result(data: Any) -> dict:
     for tag in soup.find_all(
         [
             "script", "style", "iframe", "object",
-            "embed", "form", "svg", "math",]
+            "embed", "form", "svg", "math",
+        ]
     ):
         tag.decompose()
 
@@ -184,9 +184,9 @@ def generate_with_key_failover(
     """
     Try configured Gemini credentials in order.
 
-    Quota errors move to the next key. Invalid request or model
-    errors stop immediately because changing credentials will
-    generally not fix them.
+    Quota errors move to the next key. Invalid request/model errors
+    and temporary service-unavailability errors stop immediately.
+    Each HTTP request has a finite timeout and bounded SDK retries.
     """
 
     api_keys = _get_api_keys()
@@ -201,7 +201,15 @@ def generate_with_key_failover(
 
     for index, api_key in enumerate(api_keys, start=1):
         try:
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(
+                    timeout=30_000,
+                    retry_options=types.HttpRetryOptions(
+                        attempts=1,
+                    ),
+                ),
+            )
 
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
@@ -246,9 +254,28 @@ def generate_with_key_failover(
             )
             message = str(exc).lower()
 
+            # Stop credential rotation when Gemini is unavailable.
+            if (
+                str(code) == "503"
+                or "service unavailable" in message
+            ):
+                logging.warning(
+                    "Gemini temporarily unavailable on key slot %s; "
+                    "stopping credential failover.",
+                    index,
+                )
+
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "Gemini is temporarily unavailable. "
+                        "Please try again shortly."
+                    ),
+                ) from exc
+
             # Invalid request/model errors are not fixed by rotating keys.
             if (
-                code == 400
+                str(code) == "400"
                 or "invalid_argument" in message
                 or "model not found" in message
                 or "not_found" in message
