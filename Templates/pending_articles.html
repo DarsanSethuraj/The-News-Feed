@@ -42,7 +42,7 @@
     </button>
 
 
-    <!-- CATEGORY FILTER -->
+    <!-- CATEGORY & AUTHOR FILTER -->
 
     <div
         style="
@@ -51,57 +51,86 @@
             background:#f5f5f5;
             border:1px solid #ddd;
             border-radius:8px;
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:20px;
         "
     >
 
-        <label
-            for="category-filter"
-            style="
-                font-weight:bold;
-                font-size:18px;
-                margin-right:10px;
-            "
-        >
-            Filter by Category:
-        </label>
+        <div>
+            <label
+                for="category-filter"
+                style="
+                    font-weight:bold;
+                    font-size:18px;
+                    margin-right:10px;
+                "
+            >
+                Filter by Category:
+            </label>
 
+            <select
+                id="category-filter"
+                onchange="filterArticles()"
+                style="
+                    padding:10px 15px;
+                    font-size:16px;
+                    border:1px solid #ccc;
+                    border-radius:6px;
+                    min-width:200px;
+                    cursor:pointer;
+                "
+            >
+                <option value="all">
+                    All Categories
+                </option>
+                <option value="World">World</option>
+                <option value="India">India</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Gulf">Gulf</option>
+                <option value="Tech">Tech</option>
+                <option value="Sports">Sports</option>
+                <option value="Crime">Crime</option>
+                <option value="Uncategorized">Uncategorized</option>
+            </select>
+        </div>
 
-        <select
-            id="category-filter"
-            onchange="filterArticlesByCategory()"
-            style="
-                padding:10px 15px;
-                font-size:16px;
-                border:1px solid #ccc;
-                border-radius:6px;
-                min-width:220px;
-                cursor:pointer;
-            "
-        >
+        <div>
+            <label
+                for="author-filter"
+                style="
+                    font-weight:bold;
+                    font-size:18px;
+                    margin-right:10px;
+                "
+            >
+                Filter by Author:
+            </label>
 
-            <option value="all">
-                All Categories
-            </option>
-
-
-            <option value="World">World</option>
-            <option value="India">India</option>
-            <option value="Kerala">Kerala</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Gulf">Gulf</option>
-            <option value="Tech">Tech</option>
-            <option value="Sports">Sports</option>
-            <option value="Crime">Crime</option>
-            <option value="Uncategorized">Uncategorized</option>
-
-        </select>
-
+            <select
+                id="author-filter"
+                onchange="filterArticles()"
+                style="
+                    padding:10px 15px;
+                    font-size:16px;
+                    border:1px solid #ccc;
+                    border-radius:6px;
+                    min-width:200px;
+                    cursor:pointer;
+                "
+            >
+                <option value="all">
+                    All Authors
+                </option>
+            </select>
+        </div>
 
         <button
             type="button"
-            onclick="resetCategoryFilter()"
+            onclick="resetFilters()"
             style="
-                margin-left:10px;
                 padding:10px 16px;
                 border:none;
                 border-radius:6px;
@@ -110,7 +139,7 @@
                 cursor:pointer;
             "
         >
-            Reset
+            Reset Filters
         </button>
 
     </div>
@@ -123,6 +152,7 @@
     <div
         id="article-{{ article.id }}"
         data-category="{{ article.category }}"
+        data-author="{{ article.author }}"
         style="
             border:1px solid #ccc;
             padding:15px;
@@ -800,73 +830,77 @@
 
 
 
-    <!-- CATEGORY FILTER -->
+    <!-- FILTERS SCRIPT (CATEGORY & AUTHOR) -->
 
     <script>
 
-        function filterArticlesByCategory() {
+        function populateAuthorFilter() {
+            const authorSelect = document.getElementById("author-filter");
+            const currentSelection = authorSelect.value;
+            const authors = new Set();
 
-            const selectedCategory =
-                document.getElementById(
-                    "category-filter"
-                ).value;
-
-
-            const articles =
-                document.querySelectorAll(
-                    "[id^='article-']"
-                );
-
-
-            let visibleCount = 0;
-
-
-            articles.forEach(function(article) {
-
-                const articleCategory =
-                    article.getAttribute(
-                        "data-category"
-                    );
-
-
-                if (
-                    selectedCategory === "all" ||
-                    articleCategory === selectedCategory
-                ) {
-
-                    article.style.display = "block";
-
-                    visibleCount++;
-
+            document.querySelectorAll("[id^='article-']").forEach(function(article) {
+                const author = article.getAttribute("data-author");
+                if (author && author.trim()) {
+                    authors.add(author.trim());
                 }
-
-                else {
-
-                    article.style.display = "none";
-
-                }
-
             });
 
+            // Reset options keeping "All Authors"
+            authorSelect.innerHTML = '<option value="all">All Authors</option>';
 
-            document.getElementById(
-                "article-count"
-            ).innerText = visibleCount;
-
+            Array.from(authors).sort().forEach(function(author) {
+                const opt = document.createElement("option");
+                opt.value = author;
+                opt.textContent = author;
+                if (author === currentSelection) {
+                    opt.selected = true;
+                }
+                authorSelect.appendChild(opt);
+            });
         }
 
+        function filterArticles() {
+            const selectedCategory = document.getElementById("category-filter").value;
+            const selectedAuthor = document.getElementById("author-filter").value;
+            const articles = document.querySelectorAll("[id^='article-']");
+            let visibleCount = 0;
 
+            articles.forEach(function(article) {
+                const articleCategory = article.getAttribute("data-category");
+                const articleAuthor = article.getAttribute("data-author");
+
+                const categoryMatch = (selectedCategory === "all" || articleCategory === selectedCategory);
+                const authorMatch = (selectedAuthor === "all" || articleAuthor === selectedAuthor);
+
+                if (categoryMatch && authorMatch) {
+                    article.style.display = "block";
+                    visibleCount++;
+                } else {
+                    article.style.display = "none";
+                }
+            });
+
+            document.getElementById("article-count").innerText = visibleCount;
+        }
+
+        // Backward compatibility
+        function filterArticlesByCategory() {
+            filterArticles();
+        }
+
+        function resetFilters() {
+            document.getElementById("category-filter").value = "all";
+            document.getElementById("author-filter").value = "all";
+            filterArticles();
+        }
 
         function resetCategoryFilter() {
-
-            document.getElementById(
-                "category-filter"
-            ).value = "all";
-
-
-            filterArticlesByCategory();
-
+            resetFilters();
         }
+
+        // Populate authors on page load
+        populateAuthorFilter();
 
     </script>
 
@@ -935,7 +969,7 @@
 
                     articleEl.remove();
 
-                    filterArticlesByCategory();
+                    filterArticles();
 
                 }, 800);
 
@@ -1120,7 +1154,7 @@
 
                     articleEl.remove();
 
-                    filterArticlesByCategory();
+                    filterArticles();
 
                 }, 800);
 
@@ -1281,7 +1315,7 @@
                         .remove();
 
 
-                    filterArticlesByCategory();
+                    filterArticles();
 
                 }
 
@@ -1521,11 +1555,11 @@
 
 
                     /*
-                     * Reapply current category
-                     * filter after editing.
+                     * Reapply current filter
+                     * after editing.
                      */
 
-                    filterArticlesByCategory();
+                    filterArticles();
 
                 }
 
