@@ -12,7 +12,7 @@ from google import genai
 from google.genai import types
 from database import SessionLocal
 from models import Article
-from auth_dependencies import verify_admin
+from Authentication.admin_auth import verify_admin
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

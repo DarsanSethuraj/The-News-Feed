@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from database import SessionLocal
 from pydantic import BaseModel
 from models import Article
-from auth_dependencies import verify_admin
+from Authentication.admin_auth import verify_admin
 
 router = APIRouter()
 
