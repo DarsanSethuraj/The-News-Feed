@@ -2,17 +2,14 @@
 <html>
 
 <head>
-
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pending Articles</title>
-
 </head>
 
-
-<body>
-
+<body style="font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; max-width: 1100px; margin: 0 auto; color: #111;">
 
     <h1>Pending Articles</h1>
-
 
     <h2>
         Matching Articles:
@@ -21,69 +18,59 @@
         </span>
     </h2>
 
-
     <!-- CREATE ARTICLE -->
-
     <button
         type="button"
         onclick="window.location.href='/admin/create-article-page'"
         style="
-            background:#007bff;
-            color:white;
-            border:none;
-            padding:12px 24px;
-            border-radius:8px;
-            cursor:pointer;
-            font-weight:bold;
-            margin-bottom:20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 20px;
         "
     >
         ➕ Create Article
     </button>
 
-
     <!-- CATEGORY FILTER -->
-
     <div
         style="
-            margin-bottom:25px;
-            padding:15px;
-            background:#f5f5f5;
-            border:1px solid #ddd;
-            border-radius:8px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
         "
     >
-
         <label
             for="category-filter"
             style="
-                font-weight:bold;
-                font-size:18px;
-                margin-right:10px;
+                font-weight: bold;
+                font-size: 18px;
+                margin-right: 10px;
             "
         >
             Filter by Category:
         </label>
 
-
         <select
             id="category-filter"
             onchange="filterArticlesByCategory()"
             style="
-                padding:10px 15px;
-                font-size:16px;
-                border:1px solid #ccc;
-                border-radius:6px;
-                min-width:220px;
-                cursor:pointer;
+                padding: 10px 15px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                min-width: 220px;
+                cursor: pointer;
             "
         >
-
-            <option value="all">
-                All Categories
-            </option>
-
-
+            <option value="all">All Categories</option>
             <option value="World">World</option>
             <option value="India">India</option>
             <option value="Kerala">Kerala</option>
@@ -93,1642 +80,892 @@
             <option value="Sports">Sports</option>
             <option value="Crime">Crime</option>
             <option value="Uncategorized">Uncategorized</option>
-
         </select>
-
 
         <button
             type="button"
             onclick="resetCategoryFilter()"
             style="
-                margin-left:10px;
-                padding:10px 16px;
-                border:none;
-                border-radius:6px;
-                background:#555;
-                color:white;
-                cursor:pointer;
+                margin-left: 10px;
+                padding: 10px 16px;
+                border: none;
+                border-radius: 6px;
+                background: #555;
+                color: white;
+                cursor: pointer;
             "
         >
             Reset
         </button>
-
     </div>
 
-
-
     {% for article in articles %}
-
 
     <div
         id="article-{{ article.id }}"
         data-category="{{ article.category }}"
         style="
-            border:1px solid #ccc;
-            padding:15px;
-            margin-bottom:20px;
-            transition:all 0.3s ease;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            background: white;
+            transition: all 0.3s ease;
         "
     >
 
-
         <!-- TITLE -->
-
-        <h2 id="title-display-{{ article.id }}">
+        <h2 id="title-display-{{ article.id }}" style="margin-top: 0;">
             {{ article.title }}
         </h2>
 
-
-
         <!-- IMAGE -->
-
         {% if article.image_url %}
-
         <img
             id="image-display-{{ article.id }}"
             src="{{ article.image_url }}"
             width="900"
             style="
-                max-width:100%;
-                height:auto;
+                max-width: 100%;
+                height: auto;
+                border-radius: 6px;
+                margin-bottom: 10px;
             "
         >
-
         {% endif %}
 
-
-
         <!-- IMAGE URL -->
-
         <p>
-
-            <strong>
-                Image URL:
-            </strong>
-
+            <strong>Image URL:</strong>
             <span
                 id="image-url-display-{{ article.id }}"
-                style="
-                    word-break:break-all;
-                    color:#007bff;
-                "
+                style="word-break: break-all; color: #007bff;"
             >
                 {{ article.image_url or '' }}
             </span>
-
         </p>
 
-
-
-        <!-- AUTHOR + CATEGORY + EDIT -->
-
+        <!-- AUTHOR + CATEGORY + EDIT + AI REWRITE -->
         <div
             style="
-                display:flex;
-                align-items:center;
-                gap:15px;
-                margin-top:10px;
-                margin-bottom:15px;
-                flex-wrap:wrap;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                margin-top: 10px;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
             "
         >
-
-            <p
-                style="
-                    color:#5f0000;
-                    font-weight:500;
-                    margin:0;
-                "
-            >
-
-                <strong style="color:#111;">
-                    Author:
-                </strong>
-
+            <p style="color: #5f0000; font-weight: 500; margin: 0;">
+                <strong style="color: #111;">Author:</strong>
                 {{ article.author }}
-
             </p>
 
-
-
-            <p style="margin:0;">
-
-                <strong>
-                    Category:
-                </strong>
-
-                <span
-                    id="category-display-{{ article.id }}"
-                >
+            <p style="margin: 0;">
+                <strong>Category:</strong>
+                <span id="category-display-{{ article.id }}">
                     {{ article.category }}
                 </span>
-
             </p>
 
-
-
             <!-- EDIT BUTTON -->
-
             <button
                 type="button"
                 onclick="toggleEdit({{ article.id }})"
                 style="
-                    width:36px;
-                    height:36px;
-                    border:none;
-                    border-radius:8px;
-                    background:#222;
-                    color:white;
-                    font-size:18px;
-                    cursor:pointer;
+                    width: 36px;
+                    height: 36px;
+                    border: none;
+                    border-radius: 8px;
+                    background: #222;
+                    color: white;
+                    font-size: 18px;
+                    cursor: pointer;
                 "
                 title="Edit article"
             >
                 ✎
             </button>
 
-                        <!-- AI REWRITE BUTTON -->
-
+            <!-- AI REWRITE BUTTON -->
             <button
                 type="button"
                 id="rewrite-button-{{ article.id }}"
                 onclick="rewriteArticle({{ article.id }})"
                 style="
-                    padding:10px 16px;
-                    border:none;
-                    border-radius:8px;
-                    background:#6f42c1;
-                    color:white;
-                    font-weight:bold;
-                    cursor:pointer;
+                    padding: 9px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    background: #6f42c1;
+                    color: white;
+                    font-weight: bold;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
                 "
             >
                 ✨ Rewrite with AI
             </button>
-
         </div>
 
-
         <!-- AI REWRITE RESULTS PANEL -->
-        <div id="rewrite-panel-{{ article.id }}"
-            style="display: none; margin: 15px 0; padding: 16px; border: 1px solid #6366f1; border-radius: 10px; background: #f8faff;">
+        <div
+            id="rewrite-panel-{{ article.id }}"
+            style="
+                display: none;
+                margin: 15px 0 25px 0;
+                padding: 18px;
+                border: 1.5px solid #6366f1;
+                border-radius: 10px;
+                background: #f8faff;
+            "
+        >
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; color: #4338ca; display: flex; align-items: center; gap: 8px;">
+                    ✨ AI Rewrite Results
+                </h3>
+                <button
+                    type="button"
+                    onclick="closeRewritePanel({{ article.id }})"
+                    style="border: none; background: transparent; font-size: 20px; cursor: pointer; color: #6b7280; padding: 0 4px;"
+                    title="Close Panel"
+                >
+                    ✕
+                </button>
+            </div>
 
-            <h3 style="margin: 0 0 12px; color: #4338ca;">
-                ✨ AI Rewrite Results
-            </h3>
-
-            <p id="rewrite-status-{{ article.id }}"
-            style="margin-bottom: 12px; color: #555;">
+            <p
+                id="rewrite-status-{{ article.id }}"
+                style="margin: 0 0 14px 0; color: #555; font-weight: 500;"
+            >
                 Select a headline and review the rewritten article below.
             </p>
 
             <!-- FOUR ALTERNATIVE TITLES -->
             <div style="margin-bottom: 16px;">
-                <h4 style="margin-bottom: 8px;">Choose a headline</h4>
-
-                <div id="rewrite-titles-{{ article.id }}"
-                    style="display: flex; flex-direction: column; gap: 8px;">
-                </div>
+                <h4 style="margin: 0 0 8px 0;">Choose a headline:</h4>
+                <div
+                    id="rewrite-titles-{{ article.id }}"
+                    style="display: flex; flex-direction: column; gap: 8px;"
+                ></div>
             </div>
 
             <!-- REWRITTEN ARTICLE PREVIEW -->
             <div style="margin-bottom: 14px;">
-                <h4 style="margin-bottom: 8px;">Rewritten article preview</h4>
-
+                <h4 style="margin: 0 0 8px 0;">Rewritten article preview:</h4>
                 <textarea
                     id="rewrite-preview-{{ article.id }}"
                     rows="14"
                     placeholder="The rewritten article will appear here..."
-                    style="width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-family: monospace; font-size: 13px; resize: vertical;"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        padding: 12px;
+                        border: 1px solid #ccc;
+                        border-radius: 6px;
+                        font-family: monospace;
+                        font-size: 14px;
+                        line-height: 1.6;
+                        resize: vertical;
+                    "
                 ></textarea>
-
                 <small style="display: block; margin-top: 6px; color: #666;">
-                    Review the content before applying it to the edit form.
+                    You can edit the content directly in the box above before applying it to the editor form.
                 </small>
             </div>
 
             <!-- ACTION BUTTONS -->
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                 <button
                     type="button"
                     id="apply-rewrite-{{ article.id }}"
                     onclick="applyRewrite({{ article.id }})"
                     disabled
-                    style="padding: 9px 16px; background: #4f46e5; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    Apply Rewrite
+                    style="
+                        padding: 10px 18px;
+                        background: #4f46e5;
+                        color: white;
+                        font-weight: bold;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    "
+                >
+                    ✓ Apply Rewrite to Editor
+                </button>
+
+                <button
+                    type="button"
+                    id="regenerate-rewrite-{{ article.id }}"
+                    onclick="regenerateRewrite({{ article.id }})"
+                    style="
+                        padding: 10px 16px;
+                        background: #059669;
+                        color: white;
+                        font-weight: bold;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    "
+                >
+                    🔄 Regenerate Fresh AI Rewrite
                 </button>
 
                 <button
                     type="button"
                     onclick="closeRewritePanel({{ article.id }})"
-                    style="padding: 9px 16px; background: #e5e7eb; color: #111827; border: none; border-radius: 6px; cursor: pointer;">
+                    style="
+                        padding: 10px 16px;
+                        background: #e5e7eb;
+                        color: #111827;
+                        border: none;
+                        border-radius: 6px;
+                        cursor: pointer;
+                    "
+                >
                     Cancel
                 </button>
-
             </div>
 
-            <p style="margin: 12px 0 0; font-size: 12px; color: #666;">
-                Applying the rewrite only fills the edit fields. You must still click
-                <strong>Save Changes</strong> to save it. The article will not be
-                automatically approved or published.
+            <p style="margin: 12px 0 0 0; font-size: 12px; color: #666;">
+                Applying the rewrite fills the edit fields below. You must still click
+                <strong>Save Changes</strong> to store it in the database.
             </p>
-
         </div>
         <!-- END AI REWRITE RESULTS PANEL -->
-        
-        <!-- ARTICLE AGE -->
 
+        <!-- ARTICLE AGE -->
         <p
             id="age-{{ article.id }}"
             data-age-minutes="{{ article.age_minutes }}"
-            style="
-                margin:0;
-                font-weight:bold;
-            "
+            style="margin: 0; font-weight: bold;"
         >
-
-            {{ article.age_minutes // 60 }}h
-            {{ article.age_minutes % 60 }}m
-            ago
-
+            {{ article.age_minutes // 60 }}h {{ article.age_minutes % 60 }}m ago
         </p>
 
-
-
         <!-- CONTENT DISPLAY -->
-
         <div
             id="content-display-{{ article.id }}"
-            style="
-                line-height:1.8;
-                font-size:17px;
-                margin-top:15px;
-            "
+            style="line-height: 1.8; font-size: 17px; margin-top: 15px;"
         >
             {{ article.content | safe }}
         </div>
 
-
-
         <!-- EDIT FORM -->
-
         <div
             id="edit-form-{{ article.id }}"
             style="
-                display:none;
-                margin-top:25px;
-                margin-bottom:35px;
+                display: none;
+                margin-top: 25px;
+                margin-bottom: 35px;
+                background: #fdfdfd;
+                padding: 16px;
+                border: 1px dashed #bbb;
+                border-radius: 8px;
             "
         >
-
-
             <!-- COPY CONTENT -->
-
-            <div
-                style="
-                    display:flex;
-                    justify-content:flex-end;
-                    margin-bottom:15px;
-                "
-            >
-
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
                 <button
                     type="button"
                     onclick="copyContent({{ article.id }})"
                     style="
-                        background:#007bff;
-                        color:white;
-                        border:none;
-                        padding:12px 24px;
-                        border-radius:8px;
-                        cursor:pointer;
-                        font-weight:bold;
-                        font-size:18px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        font-size: 16px;
                     "
                 >
                     📋 Copy Content
                 </button>
-
             </div>
 
-
-
             <!-- TITLE -->
-
-            <label>
-
-                <strong>
-                    Title
-                </strong>
-
-            </label>
-
-
+            <label><strong>Title</strong></label>
             <input
                 id="title-editor-{{ article.id }}"
                 type="text"
                 value="{{ article.title }}"
                 style="
-                    width:100%;
-                    padding:10px;
-                    font-size:20px;
-                    margin-top:8px;
-                    margin-bottom:15px;
-                    box-sizing:border-box;
+                    width: 100%;
+                    padding: 10px;
+                    font-size: 18px;
+                    margin-top: 6px;
+                    margin-bottom: 15px;
+                    box-sizing: border-box;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
                 "
             >
 
-
-
             <!-- CATEGORY -->
-
-            <label>
-
-                <strong>
-                    Category
-                </strong>
-
-            </label>
-
-
+            <label><strong>Category</strong></label>
             <select
                 id="category-editor-{{ article.id }}"
                 style="
-                    width:100%;
-                    padding:10px;
-                    font-size:17px;
-                    margin-top:8px;
-                    margin-bottom:15px;
-                    box-sizing:border-box;
+                    width: 100%;
+                    padding: 10px;
+                    font-size: 16px;
+                    margin-top: 6px;
+                    margin-bottom: 15px;
+                    box-sizing: border-box;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
                 "
             >
-
-                <option
-                    value="World"
-                    {% if article.category == "World" %}selected{% endif %}
-                >
-                    World
-                </option>
-
-                <option
-                    value="India"
-                    {% if article.category == "India" %}selected{% endif %}
-                >
-                    India
-                </option>
-
-                <option
-                    value="Kerala"
-                    {% if article.category == "Kerala" %}selected{% endif %}
-                >
-                    Kerala
-                </option>
-
-                <option
-                    value="Entertainment"
-                    {% if article.category == "Entertainment" %}selected{% endif %}
-                >
-                    Entertainment
-                </option>
-
-                <option
-                    value="Gulf"
-                    {% if article.category == "Gulf" %}selected{% endif %}
-                >
-                    Gulf
-                </option>
-
-                <option
-                    value="Tech"
-                    {% if article.category == "Tech" %}selected{% endif %}
-                >
-                    Tech
-                </option>
-
-                <option
-                    value="Sports"
-                    {% if article.category == "Sports" %}selected{% endif %}
-                >
-                    Sports
-                </option>
-
-                <option
-                    value="Crime"
-                    {% if article.category == "Crime" %}selected{% endif %}
-                >
-                    Crime
-                </option>
-
+                <option value="World" {% if article.category == "World" %}selected{% endif %}>World</option>
+                <option value="India" {% if article.category == "India" %}selected{% endif %}>India</option>
+                <option value="Kerala" {% if article.category == "Kerala" %}selected{% endif %}>Kerala</option>
+                <option value="Entertainment" {% if article.category == "Entertainment" %}selected{% endif %}>Entertainment</option>
+                <option value="Gulf" {% if article.category == "Gulf" %}selected{% endif %}>Gulf</option>
+                <option value="Tech" {% if article.category == "Tech" %}selected{% endif %}>Tech</option>
+                <option value="Sports" {% if article.category == "Sports" %}selected{% endif %}>Sports</option>
+                <option value="Crime" {% if article.category == "Crime" %}selected{% endif %}>Crime</option>
+                <option value="Uncategorized" {% if article.category == "Uncategorized" %}selected{% endif %}>Uncategorized</option>
             </select>
 
-
-
             <!-- IMAGE URL -->
-
-            <label>
-
-                <strong>
-                    Image URL
-                </strong>
-
-            </label>
-
-
+            <label><strong>Image URL</strong></label>
             <input
                 id="image-editor-{{ article.id }}"
                 type="text"
                 value="{{ article.image_url or '' }}"
                 placeholder="https://example.com/image.jpg"
                 style="
-                    width:100%;
-                    padding:10px;
-                    font-size:16px;
-                    margin-top:8px;
-                    margin-bottom:15px;
-                    box-sizing:border-box;
+                    width: 100%;
+                    padding: 10px;
+                    font-size: 16px;
+                    margin-top: 6px;
+                    margin-bottom: 15px;
+                    box-sizing: border-box;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
                 "
             >
 
-
-
             <!-- CONTENT -->
-
-            <label>
-
-                <strong>
-                    Content
-                </strong>
-
-            </label>
-
-
+            <label><strong>Content</strong></label>
             <textarea
                 id="content-editor-{{ article.id }}"
                 rows="15"
                 style="
-                    width:100%;
-                    margin-top:8px;
-                    font-size:16px;
-                    padding:10px;
-                    box-sizing:border-box;
+                    width: 100%;
+                    margin-top: 6px;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    padding: 10px;
+                    box-sizing: border-box;
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    font-family: monospace;
                 "
             >{{ article.content }}</textarea>
 
-
-
             <!-- SAVE / CANCEL -->
-
-            <div
-                style="
-                    margin-top:15px;
-                    display:flex;
-                    gap:12px;
-                "
-            >
-
+            <div style="margin-top: 15px; display: flex; gap: 12px;">
                 <button
                     type="button"
                     onclick="saveArticle({{ article.id }})"
                     style="
-                        background:#1f7a1f;
-                        color:white;
-                        border:none;
-                        padding:10px 18px;
-                        border-radius:6px;
-                        cursor:pointer;
-                        font-weight:bold;
-                        font-size:20px;
+                        background: #1f7a1f;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        font-size: 18px;
                     "
                 >
                     Save Changes
                 </button>
 
-
                 <button
                     type="button"
                     onclick="toggleEdit({{ article.id }})"
                     style="
-                        background:#666;
-                        color:white;
-                        border:none;
-                        padding:10px 18px;
-                        border-radius:6px;
-                        cursor:pointer;
-                        font-weight:bold;
-                        font-size:20px;
+                        background: #666;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        font-size: 18px;
                     "
                 >
                     Cancel
                 </button>
-
             </div>
-
         </div>
-
-
 
         <!-- TIERS -->
-
-        <div
-            style="
-                margin:15px 0;
-                display:flex;
-                gap:25px;
-                align-items:center;
-            "
-        >
-
-            <label
-                style="
-                    font-size:22px;
-                    font-weight:bold;
-                    display:flex;
-                    align-items:center;
-                    gap:8px;
-                "
-            >
-
-                <input
-                    type="checkbox"
-                    id="tier25-{{ article.id }}"
-                    style="
-                        width:32px;
-                        height:32px;
-                    "
-                >
-
+        <div style="margin: 15px 0; display: flex; gap: 25px; align-items: center;">
+            <label style="font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="tier25-{{ article.id }}" style="width: 26px; height: 26px; cursor: pointer;">
                 25
-
             </label>
 
-
-
-            <label
-                style="
-                    font-size:22px;
-                    font-weight:bold;
-                    display:flex;
-                    align-items:center;
-                    gap:8px;
-                "
-            >
-
-                <input
-                    type="checkbox"
-                    id="tier50-{{ article.id }}"
-                    style="
-                        width:32px;
-                        height:32px;
-                    "
-                >
-
+            <label style="font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="tier50-{{ article.id }}" style="width: 26px; height: 26px; cursor: pointer;">
                 50
-
             </label>
 
-
-
-            <label
-                style="
-                    font-size:22px;
-                    font-weight:bold;
-                    display:flex;
-                    align-items:center;
-                    gap:8px;
-                "
-            >
-
-                <input
-                    type="checkbox"
-                    id="tier100-{{ article.id }}"
-                    style="
-                        width:32px;
-                        height:32px;
-                    "
-                >
-
+            <label style="font-size: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="tier100-{{ article.id }}" style="width: 26px; height: 26px; cursor: pointer;">
                 100
-
             </label>
-
         </div>
 
-
-
         <!-- ACTION BUTTONS -->
-
-        <div
-            style="
-                margin-top:30px;
-            "
-        >
-
+        <div style="margin-top: 25px; display: flex; gap: 15px; flex-wrap: wrap;">
             <button
                 type="button"
                 onclick="approveArticle({{ article.id }})"
                 style="
-                    padding:15px 30px;
-                    font-size:18px;
-                    font-weight:bold;
-                    min-width:140px;
-                    border:none;
-                    border-radius:8px;
-                    cursor:pointer;
-                    background:#28a745;
-                    color:white;
+                    padding: 14px 28px;
+                    font-size: 17px;
+                    font-weight: bold;
+                    min-width: 130px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: #28a745;
+                    color: white;
                 "
             >
                 Approve
             </button>
 
-
-
             <button
                 type="button"
                 onclick="confirmBreaking({{ article.id }})"
                 style="
-                    padding:15px 30px;
-                    font-size:18px;
-                    font-weight:bold;
-                    min-width:140px;
-                    border:none;
-                    border-radius:8px;
-                    cursor:pointer;
-                    background:red;
-                    color:white;
+                    padding: 14px 28px;
+                    font-size: 17px;
+                    font-weight: bold;
+                    min-width: 130px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: #dc3545;
+                    color: white;
                 "
             >
                 BREAKING
             </button>
 
-
-
             <button
                 type="button"
                 onclick="moderateArticle({{ article.id }}, 'reject')"
                 style="
-                    padding:15px 30px;
-                    font-size:18px;
-                    font-weight:bold;
-                    min-width:140px;
-                    border:none;
-                    border-radius:8px;
-                    cursor:pointer;
-                    background:#555;
-                    color:white;
+                    padding: 14px 28px;
+                    font-size: 17px;
+                    font-weight: bold;
+                    min-width: 130px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    background: #555;
+                    color: white;
                 "
             >
                 Reject
             </button>
-
         </div>
-
 
     </div>
 
-
     {% endfor %}
 
+    <!-- SCRIPTS -->
 
-
-    <!-- CATEGORY FILTER -->
-
+    <!-- CATEGORY FILTER SCRIPT -->
     <script>
-
         function filterArticlesByCategory() {
-
-            const selectedCategory =
-                document.getElementById(
-                    "category-filter"
-                ).value;
-
-
-            const articles =
-                document.querySelectorAll(
-                    "[id^='article-']"
-                );
-
-
+            const selectedCategory = document.getElementById("category-filter").value;
+            const articles = document.querySelectorAll("[id^='article-']");
             let visibleCount = 0;
 
+            articles.forEach(function (article) {
+                const articleCategory = article.getAttribute("data-category");
 
-            articles.forEach(function(article) {
-
-                const articleCategory =
-                    article.getAttribute(
-                        "data-category"
-                    );
-
-
-                if (
-                    selectedCategory === "all" ||
-                    articleCategory === selectedCategory
-                ) {
-
+                if (selectedCategory === "all" || articleCategory === selectedCategory) {
                     article.style.display = "block";
-
                     visibleCount++;
-
-                }
-
-                else {
-
+                } else {
                     article.style.display = "none";
-
                 }
-
             });
 
-
-            document.getElementById(
-                "article-count"
-            ).innerText = visibleCount;
-
+            document.getElementById("article-count").innerText = visibleCount;
         }
-
-
 
         function resetCategoryFilter() {
-
-            document.getElementById(
-                "category-filter"
-            ).value = "all";
-
-
+            document.getElementById("category-filter").value = "all";
             filterArticlesByCategory();
-
         }
-
     </script>
 
-
-
-    <!-- APPROVE / REJECT -->
-
+    <!-- MODERATE ARTICLE SCRIPT (REJECT) -->
     <script>
-
-        async function moderateArticle(
-            articleId,
-            action
-        ) {
-
+        async function moderateArticle(articleId, action) {
             try {
-
-                const res = await fetch(
-                    "/" + action + "/" + articleId,
-                    {
-                        method: "POST"
-                    }
-                );
-
-
-                const articleEl =
-                    document.getElementById(
-                        "article-" + articleId
-                    );
-
-
-                if (!res.ok) {
-
-                    articleEl.style.backgroundColor =
-                        "#fff3cd";
-
-                    articleEl.style.borderColor =
-                        "#ff9800";
-
-                    return;
-
-                }
-
-
-                if (action === "approve") {
-
-                    articleEl.style.backgroundColor =
-                        "#d4edda";
-
-                    articleEl.style.borderColor =
-                        "green";
-
-                }
-
-                else {
-
-                    articleEl.style.backgroundColor =
-                        "#f8d7da";
-
-                    articleEl.style.borderColor =
-                        "red";
-
-                }
-
-
-                setTimeout(function() {
-
-                    articleEl.remove();
-
-                    filterArticlesByCategory();
-
-                }, 800);
-
-
-            }
-
-            catch (err) {
-
-                const articleEl =
-                    document.getElementById(
-                        "article-" + articleId
-                    );
-
-
-                articleEl.style.backgroundColor =
-                    "#fff3cd";
-
-                articleEl.style.borderColor =
-                    "#ff9800";
-
-            }
-
-        }
-
-    </script>
-
-
-
-    <!-- EDIT TOGGLE -->
-
-    <script>
-
-        function toggleEdit(articleId) {
-
-            const form =
-                document.getElementById(
-                    "edit-form-" + articleId
-                );
-
-
-            if (form.style.display === "none") {
-
-                form.style.display = "block";
-
-            }
-
-            else {
-
-                form.style.display = "none";
-
-            }
-
-        }
-
-    </script>
-
-
-
-    <!-- COPY CONTENT -->
-
-    <script>
-
-        async function copyContent(articleId) {
-
-            const titleField =
-                document.getElementById(
-                    "title-editor-" + articleId
-                );
-
-
-            const contentField =
-                document.getElementById(
-                    "content-editor-" + articleId
-                );
-
-
-            const title =
-                titleField.value;
-
-
-            const content =
-                contentField.value;
-
-
-            const textToCopy =
-                title + "\n\n" + content;
-
-
-            try {
-
-                await navigator.clipboard.writeText(
-                    textToCopy
-                );
-
-
-                titleField.value = "";
-
-                contentField.value = "";
-
-
-                alert(
-                    "Title and content copied."
-                );
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "Copy failed:",
-                    error
-                );
-
-
-                alert(
-                    "Failed to copy content."
-                );
-
-            }
-
-        }
-
-    </script>
-
-
-
-    <!-- BREAKING -->
-
-    <script>
-
-        async function confirmBreaking(articleId) {
-
-            const confirmed = confirm(
-                "Force publish this article as BREAKING news?"
-            );
-
-
-            if (!confirmed) {
-
-                return;
-
-            }
-
-
-            try {
-
-                const res = await fetch(
-                    "/breaking/" + articleId,
-                    {
-                        method: "POST"
-                    }
-                );
-
-
-                const articleEl =
-                    document.getElementById(
-                        "article-" + articleId
-                    );
-
-
-                if (!res.ok) {
-
-                    articleEl.style.backgroundColor =
-                        "#fff3cd";
-
-                    articleEl.style.borderColor =
-                        "#ff9800";
-
-                    return;
-
-                }
-
-
-                articleEl.style.backgroundColor =
-                    "#cccfff";
-
-                articleEl.style.borderColor =
-                    "blue";
-
-
-                setTimeout(function() {
-
-                    articleEl.remove();
-
-                    filterArticlesByCategory();
-
-                }, 800);
-
-
-            }
-
-            catch (err) {
-
-                const articleEl =
-                    document.getElementById(
-                        "article-" + articleId
-                    );
-
-
-                articleEl.style.backgroundColor =
-                    "#fff3cd";
-
-                articleEl.style.borderColor =
-                    "#ff9800";
-
-            }
-
-        }
-
-    </script>
-
-
-
-    <!-- ARTICLE AGE -->
-
-    <script>
-
-        function updateArticleAges() {
-
-            document
-                .querySelectorAll(
-                    "[id^='age-']"
-                )
-                .forEach(function(el) {
-
-                    const ageMinutes =
-                        parseInt(
-                            el.getAttribute(
-                                "data-age-minutes"
-                            )
-                        );
-
-
-                    const hours =
-                        Math.floor(
-                            ageMinutes / 60
-                        );
-
-
-                    if (hours >= 3) {
-
-                        el.style.color = "red";
-
-                    }
-
-                    else if (hours >= 1) {
-
-                        el.style.color = "orange";
-
-                    }
-
-                    else {
-
-                        el.style.color = "green";
-
-                    }
-
+                const res = await fetch("/" + action + "/" + articleId, {
+                    method: "POST"
                 });
 
-        }
+                const articleEl = document.getElementById("article-" + articleId);
 
+                if (!res.ok) {
+                    articleEl.style.backgroundColor = "#fff3cd";
+                    articleEl.style.borderColor = "#ff9800";
+                    return;
+                }
+
+                if (action === "approve") {
+                    articleEl.style.backgroundColor = "#d4edda";
+                    articleEl.style.borderColor = "green";
+                } else {
+                    articleEl.style.backgroundColor = "#f8d7da";
+                    articleEl.style.borderColor = "red";
+                }
+
+                setTimeout(function () {
+                    articleEl.remove();
+                    filterArticlesByCategory();
+                }, 800);
+
+            } catch (err) {
+                const articleEl = document.getElementById("article-" + articleId);
+                articleEl.style.backgroundColor = "#fff3cd";
+                articleEl.style.borderColor = "#ff9800";
+            }
+        }
+    </script>
+
+    <!-- EDIT TOGGLE SCRIPT -->
+    <script>
+        function toggleEdit(articleId) {
+            const form = document.getElementById("edit-form-" + articleId);
+            form.style.display = (form.style.display === "none") ? "block" : "none";
+        }
+    </script>
+
+    <!-- COPY CONTENT SCRIPT -->
+    <script>
+        async function copyContent(articleId) {
+            const titleField = document.getElementById("title-editor-" + articleId);
+            const contentField = document.getElementById("content-editor-" + articleId);
+            const textToCopy = titleField.value + "\n\n" + contentField.value;
+
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                titleField.value = "";
+                contentField.value = "";
+                alert("Title and content copied.");
+            } catch (error) {
+                console.error("Copy failed:", error);
+                alert("Failed to copy content.");
+            }
+        }
+    </script>
+
+    <!-- BREAKING SCRIPT -->
+    <script>
+        async function confirmBreaking(articleId) {
+            const confirmed = confirm("Force publish this article as BREAKING news?");
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch("/breaking/" + articleId, { method: "POST" });
+                const articleEl = document.getElementById("article-" + articleId);
+
+                if (!res.ok) {
+                    articleEl.style.backgroundColor = "#fff3cd";
+                    articleEl.style.borderColor = "#ff9800";
+                    return;
+                }
+
+                articleEl.style.backgroundColor = "#cccfff";
+                articleEl.style.borderColor = "blue";
+
+                setTimeout(function () {
+                    articleEl.remove();
+                    filterArticlesByCategory();
+                }, 800);
+            } catch (err) {
+                const articleEl = document.getElementById("article-" + articleId);
+                articleEl.style.backgroundColor = "#fff3cd";
+                articleEl.style.borderColor = "#ff9800";
+            }
+        }
+    </script>
+
+    <!-- ARTICLE AGE SCRIPT -->
+    <script>
+        function updateArticleAges() {
+            document.querySelectorAll("[id^='age-']").forEach(function (el) {
+                const ageMinutes = parseInt(el.getAttribute("data-age-minutes"), 10);
+                const hours = Math.floor(ageMinutes / 60);
+
+                if (hours >= 3) {
+                    el.style.color = "red";
+                } else if (hours >= 1) {
+                    el.style.color = "orange";
+                } else {
+                    el.style.color = "green";
+                }
+            });
+        }
 
         updateArticleAges();
-
-
-        setInterval(
-            updateArticleAges,
-            60000
-        );
-
+        setInterval(updateArticleAges, 60000);
     </script>
 
-
-
-    <!-- APPROVE -->
-
+    <!-- APPROVE ARTICLE SCRIPT -->
     <script>
-
         async function approveArticle(articleId) {
-
             const tiers = [];
-
-
-            if (
-                document.getElementById(
-                    `tier25-${articleId}`
-                ).checked
-            ) {
-
-                tiers.push(25);
-
-            }
-
-
-            if (
-                document.getElementById(
-                    `tier50-${articleId}`
-                ).checked
-            ) {
-
-                tiers.push(50);
-
-            }
-
-
-            if (
-                document.getElementById(
-                    `tier100-${articleId}`
-                ).checked
-            ) {
-
-                tiers.push(100);
-
-            }
-
+            if (document.getElementById(`tier25-${articleId}`).checked) tiers.push(25);
+            if (document.getElementById(`tier50-${articleId}`).checked) tiers.push(50);
+            if (document.getElementById(`tier100-${articleId}`).checked) tiers.push(100);
 
             try {
-
-                const res = await fetch(
-                    `/approve/${articleId}`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            tiers: tiers
-                        })
-
-                    }
-                );
-
+                const res = await fetch(`/approve/${articleId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ tiers: tiers })
+                });
 
                 if (res.ok) {
-
-                    document
-                        .getElementById(
-                            `article-${articleId}`
-                        )
-                        .remove();
-
-
+                    document.getElementById(`article-${articleId}`).remove();
                     filterArticlesByCategory();
-
+                } else {
+                    alert("Approval failed.");
                 }
-
-                else {
-
-                    alert(
-                        "Approval failed."
-                    );
-
-                }
-
-            }
-
-            catch (error) {
-
+            } catch (error) {
                 console.error(error);
-
-                alert(
-                    "Approval failed."
-                );
-
+                alert("Approval failed.");
             }
-
         }
-
     </script>
 
-
-
-    <!-- SAVE ARTICLE -->
-
+    <!-- SAVE ARTICLE SCRIPT -->
     <script>
-
         async function saveArticle(articleId) {
-
-            const title =
-                document.getElementById(
-                    `title-editor-${articleId}`
-                ).value;
-
-
-            const content =
-                document.getElementById(
-                    `content-editor-${articleId}`
-                ).value;
-
-
-            const category =
-                document.getElementById(
-                    `category-editor-${articleId}`
-                ).value;
-
-
-            const imageUrl =
-                document.getElementById(
-                    `image-editor-${articleId}`
-                ).value;
-
+            const title = document.getElementById(`title-editor-${articleId}`).value;
+            const content = document.getElementById(`content-editor-${articleId}`).value;
+            const category = document.getElementById(`category-editor-${articleId}`).value;
+            const imageUrl = document.getElementById(`image-editor-${articleId}`).value;
 
             if (!title.trim()) {
-
-                alert(
-                    "Title cannot be empty."
-                );
-
+                alert("Title cannot be empty.");
                 return;
-
             }
-
 
             if (!content.trim()) {
-
-                alert(
-                    "Content cannot be empty."
-                );
-
+                alert("Content cannot be empty.");
                 return;
-
             }
-
 
             try {
-
-                const response = await fetch(
-                    `/admin/update/${articleId}`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-
-                            title: title,
-
-                            content: content,
-
-                            category: category,
-
-                            image_url: imageUrl
-
-                        })
-
-                    }
-                );
-
+                const response = await fetch(`/admin/update/${articleId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        category: category,
+                        image_url: imageUrl
+                    })
+                });
 
                 if (response.ok) {
+                    // Update frontend DOM elements
+                    document.getElementById(`title-display-${articleId}`).innerText = title;
+                    document.getElementById(`content-display-${articleId}`).innerHTML = content;
+                    document.getElementById(`category-display-${articleId}`).innerText = category;
 
+                    const articleElement = document.getElementById(`article-${articleId}`);
+                    articleElement.setAttribute("data-category", category);
 
-                    document.getElementById(
-                        `title-display-${articleId}`
-                    ).innerText = title;
-
-
-                    document.getElementById(
-                        `content-display-${articleId}`
-                    ).innerHTML = content;
-
-
-                    document.getElementById(
-                        `category-display-${articleId}`
-                    ).innerText = category;
-
-
-                    const articleElement =
-                        document.getElementById(
-                            `article-${articleId}`
-                        );
-
-
-                    /*
-                     * Update category used
-                     * by the filter.
-                     */
-
-                    articleElement.setAttribute(
-                        "data-category",
-                        category
-                    );
-
-
-                    const imageUrlDisplay =
-                        document.getElementById(
-                            `image-url-display-${articleId}`
-                        );
-
-
+                    const imageUrlDisplay = document.getElementById(`image-url-display-${articleId}`);
                     if (imageUrlDisplay) {
-
-                        imageUrlDisplay.innerText =
-                            imageUrl;
-
+                        imageUrlDisplay.innerText = imageUrl;
                     }
 
-
-                    const image =
-                        document.getElementById(
-                            `image-display-${articleId}`
-                        );
-
-
+                    const image = document.getElementById(`image-display-${articleId}`);
                     if (image) {
-
                         if (imageUrl) {
-
-                            image.src =
-                                imageUrl;
-
-                            image.style.display =
-                                "block";
-
+                            image.src = imageUrl;
+                            image.style.display = "block";
+                        } else {
+                            image.style.display = "none";
                         }
-
-                        else {
-
-                            image.style.display =
-                                "none";
-
-                        }
-
-                    }
-
-
-                    /*
-                     * If the article originally
-                     * had no image, create one.
-                     */
-
-                    if (
-                        imageUrl &&
-                        !image
-                    ) {
-
-                        const titleElement =
-                            document.getElementById(
-                                `title-display-${articleId}`
-                            );
-
-
-                        const newImage =
-                            document.createElement(
-                                "img"
-                            );
-
-
-                        newImage.id =
-                            `image-display-${articleId}`;
-
-
-                        newImage.src =
-                            imageUrl;
-
-
+                    } else if (imageUrl) {
+                        const titleElement = document.getElementById(`title-display-${articleId}`);
+                        const newImage = document.createElement("img");
+                        newImage.id = `image-display-${articleId}`;
+                        newImage.src = imageUrl;
                         newImage.width = 900;
-
-
-                        newImage.style.maxWidth =
-                            "100%";
-
-
-                        newImage.style.height =
-                            "auto";
-
-
-                        articleElement.insertBefore(
-                            newImage,
-                            titleElement.nextSibling
-                        );
-
+                        newImage.style.maxWidth = "100%";
+                        newImage.style.height = "auto";
+                        newImage.style.borderRadius = "6px";
+                        newImage.style.marginBottom = "10px";
+                        articleElement.insertBefore(newImage, titleElement.nextSibling);
                     }
-
 
                     toggleEdit(articleId);
-
-
-                    /*
-                     * Reapply current category
-                     * filter after editing.
-                     */
-
                     filterArticlesByCategory();
 
-                }
-
-                else {
-
-                    let errorMessage =
-                        "Save failed.";
-
-
+                } else {
+                    let errorMessage = "Save failed.";
                     try {
-
-                        const data =
-                            await response.json();
-
-
-                        if (data.detail) {
-
-                            errorMessage =
-                                data.detail;
-
-                        }
-
-                    }
-
-                    catch (error) {
-
-                        // Ignore JSON parsing errors
-
-                    }
-
-
+                        const data = await response.json();
+                        if (data.detail) errorMessage = data.detail;
+                    } catch (e) {}
                     alert(errorMessage);
-
                 }
-
+            } catch (error) {
+                console.error("Save error:", error);
+                alert("Could not connect to the server.");
             }
-
-            catch (error) {
-
-                console.error(
-                    "Save error:",
-                    error
-                );
-
-
-                alert(
-                    "Could not connect to the server."
-                );
-
-            }
-
         }
-
     </script>
 
-    <!-- AI ARTICLE REWRITE -->
-
+    <!-- AI ARTICLE REWRITE SCRIPT -->
     <script>
-        // Keep results in memory for the current page session.
         const rewriteResults = {};
         const rewritingArticles = new Set();
 
-        async function rewriteArticle(articleId) {
-            const panel = document.getElementById(
-                `rewrite-panel-${articleId}`
-            );
-            const button = document.getElementById(
-                `rewrite-button-${articleId}`
-            );
-            const status = document.getElementById(
-                `rewrite-status-${articleId}`
-            );
+        async function rewriteArticle(articleId, forceFresh = false) {
+            const panel = document.getElementById(`rewrite-panel-${articleId}`);
+            const button = document.getElementById(`rewrite-button-${articleId}`);
+            const regenBtn = document.getElementById(`regenerate-rewrite-${articleId}`);
+            const status = document.getElementById(`rewrite-status-${articleId}`);
+            const applyButton = document.getElementById(`apply-rewrite-${articleId}`);
 
             panel.style.display = "block";
+            status.style.color = "#555";
 
-            // Reuse results instead of paying for another API request.
-            if (rewriteResults[articleId]) {
-                displayRewriteResults(
-                    articleId,
-                    rewriteResults[articleId]
-                );
+            // Reuse existing result if already fetched and not forced
+            if (!forceFresh && rewriteResults[articleId]) {
+                displayRewriteResults(articleId, rewriteResults[articleId]);
                 return;
             }
 
-            // Prevent duplicate simultaneous requests.
+            // Prevent duplicate clicks
             if (rewritingArticles.has(articleId)) {
                 return;
             }
 
             rewritingArticles.add(articleId);
             button.disabled = true;
+            if (regenBtn) regenBtn.disabled = true;
+            applyButton.disabled = true;
+
             button.textContent = "⏳ Rewriting...";
-            status.textContent =
-                "Rewriting the article and generating four headlines...";
+            status.textContent = "Rewriting article and generating 4 headlines with Gemini...";
 
             try {
-                const response = await fetch(
-                    `/admin/rewrite/${articleId}`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "Accept": "application/json"
-                        },
-                        credentials: "same-origin"
-                    }
-                );
+                const response = await fetch(`/admin/rewrite/${articleId}`, {
+                    method: "POST",
+                    headers: { "Accept": "application/json" },
+                    credentials: "same-origin"
+                });
 
                 const responseText = await response.text();
                 let data;
 
                 try {
                     data = JSON.parse(responseText);
-                } catch (error) {
-                    const contentType =
-                        response.headers.get("content-type") || "unknown";
-
-                    console.error("Rewrite returned non-JSON:", {
-                        status: response.status,
-                        contentType,
-                        body: responseText.slice(0, 500)
-                    });
-
-                    throw new Error(
-                        `Server returned non-JSON (HTTP ${response.status}, ` +
-                        `content type: ${contentType}). ` +
-                        `Check backend and proxy logs.`
-                    );
+                } catch (e) {
+                    throw new Error(`Server returned HTTP ${response.status} (invalid JSON).`);
                 }
 
                 if (!response.ok) {
-                    throw new Error(
-                        data.detail || "The rewrite request failed."
-                    );
+                    throw new Error(data.detail || `Request failed with HTTP ${response.status}`);
                 }
 
-                if (
-                    !Array.isArray(data.titles) ||
-                    data.titles.length !== 4 ||
-                    !data.titles.every(
-                        title =>
-                            typeof title === "string" &&
-                            title.trim()
-                    ) ||
-                    typeof data.content !== "string" ||
-                    !data.content.trim()
-                ) {
-                    throw new Error(
-                        "The server returned an invalid rewrite result."
-                    );
+                if (!Array.isArray(data.titles) || data.titles.length !== 4 || !data.content) {
+                    throw new Error("Invalid response format received from AI.");
                 }
 
+                // Cache successful result for session
                 rewriteResults[articleId] = {
                     titles: data.titles,
                     content: data.content
                 };
 
-                displayRewriteResults(
-                    articleId,
-                    rewriteResults[articleId]
-                );
+                displayRewriteResults(articleId, rewriteResults[articleId]);
 
             } catch (error) {
-                status.textContent =
-                    "Rewrite failed: " + error.message;
-
+                status.style.color = "#dc2626"; // Highlight error in bold red
+                status.textContent = "Rewrite failed: " + error.message;
                 console.error("AI rewrite error:", error);
-
             } finally {
                 rewritingArticles.delete(articleId);
                 button.disabled = false;
+                if (regenBtn) regenBtn.disabled = false;
                 button.textContent = "✨ Rewrite with AI";
             }
         }
 
+        function regenerateRewrite(articleId) {
+            delete rewriteResults[articleId];
+            rewriteArticle(articleId, true);
+        }
 
         function displayRewriteResults(articleId, result) {
-            const status = document.getElementById(
-                `rewrite-status-${articleId}`
-            );
-            const titlesContainer = document.getElementById(
-                `rewrite-titles-${articleId}`
-            );
-            const preview = document.getElementById(
-                `rewrite-preview-${articleId}`
-            );
-            const applyButton = document.getElementById(
-                `apply-rewrite-${articleId}`
-            );
+            const status = document.getElementById(`rewrite-status-${articleId}`);
+            const titlesContainer = document.getElementById(`rewrite-titles-${articleId}`);
+            const preview = document.getElementById(`rewrite-preview-${articleId}`);
+            const applyButton = document.getElementById(`apply-rewrite-${articleId}`);
 
             titlesContainer.replaceChildren();
 
             result.titles.forEach((title, index) => {
                 const label = document.createElement("label");
+                label.id = `title-label-${articleId}-${index}`;
                 label.style.cssText =
-                    "display:flex;gap:10px;align-items:flex-start;" +
-                    "padding:10px;border:1px solid #ddd;" +
-                    "border-radius:6px;background:white;cursor:pointer;";
+                    "display: flex; gap: 10px; align-items: flex-start; " +
+                    "padding: 12px; border: 1.5px solid #ddd; " +
+                    "border-radius: 6px; background: white; cursor: pointer; transition: all 0.2s;";
 
                 const radio = document.createElement("input");
                 radio.type = "radio";
                 radio.name = `rewrite-title-${articleId}`;
                 radio.value = String(index);
                 radio.checked = index === 0;
-                radio.style.marginTop = "5px";
+                radio.style.marginTop = "4px";
 
                 const titleText = document.createElement("span");
                 titleText.textContent = title;
+                titleText.style.fontWeight = "500";
+                titleText.style.lineHeight = "1.4";
+
+                // Visual highlight initial selected option
+                if (index === 0) {
+                    label.style.borderColor = "#4f46e5";
+                    label.style.background = "#eef2ff";
+                }
 
                 radio.addEventListener("change", function () {
-                    // The article content stays the same when
-                    // the user changes only the headline.
+                    result.titles.forEach((_, i) => {
+                        const lbl = document.getElementById(`title-label-${articleId}-${i}`);
+                        if (lbl) {
+                            lbl.style.borderColor = "#ddd";
+                            lbl.style.background = "white";
+                        }
+                    });
+                    label.style.borderColor = "#4f46e5";
+                    label.style.background = "#eef2ff";
                 });
 
                 label.append(radio, titleText);
@@ -1736,70 +973,50 @@
             });
 
             preview.value = result.content;
-            status.textContent =
-                "Choose one of the four headlines and review the rewritten content.";
+            status.style.color = "#059669";
+            status.textContent = "✓ Rewrite generated! Select a headline, review the body, and click Apply.";
 
             applyButton.disabled = false;
         }
 
-
         function applyRewrite(articleId) {
-            const selectedTitle = document.querySelector(
-                `input[name="rewrite-title-${articleId}"]:checked`
-            );
-
+            const selectedTitle = document.querySelector(`input[name="rewrite-title-${articleId}"]:checked`);
             if (!selectedTitle) {
                 alert("Please select a headline.");
                 return;
             }
 
             const result = rewriteResults[articleId];
-
             if (!result) {
                 alert("No rewrite result is available.");
                 return;
             }
 
-            const title = result.titles[
-                Number(selectedTitle.value)
-            ];
+            const chosenTitle = result.titles[Number(selectedTitle.value)];
+            const preview = document.getElementById(`rewrite-preview-${articleId}`);
+            const titleEditor = document.getElementById(`title-editor-${articleId}`);
+            const contentEditor = document.getElementById(`content-editor-${articleId}`);
 
-            const preview = document.getElementById(
-                `rewrite-preview-${articleId}`
-            );
-
-            const titleEditor = document.getElementById(
-                `title-editor-${articleId}`
-            );
-
-            const contentEditor = document.getElementById(
-                `content-editor-${articleId}`
-            );
-
-            // Apply the chosen title and preview content to the
-            // existing edit fields. Do not save automatically.
-            titleEditor.value = title;
+            // Apply selected title and preview content to editor form
+            titleEditor.value = chosenTitle;
             contentEditor.value = preview.value;
 
-            const editForm = document.getElementById(
-                `edit-form-${articleId}`
-            );
-
+            // Open edit form if it's currently hidden
+            const editForm = document.getElementById(`edit-form-${articleId}`);
             if (editForm.style.display === "none") {
                 toggleEdit(articleId);
             }
 
+            // Smooth scroll into the editor form
+            editForm.scrollIntoView({ behavior: "smooth", block: "start" });
+
             closeRewritePanel(articleId);
         }
 
-
         function closeRewritePanel(articleId) {
-            document.getElementById(
-                `rewrite-panel-${articleId}`
-            ).style.display = "none";
+            document.getElementById(`rewrite-panel-${articleId}`).style.display = "none";
         }
     </script>
-
 
 </body>
 
