@@ -103,7 +103,7 @@ def verify_and_clean_output(data: RewriteResponse) -> dict:
 
 
 def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
-    """Calls configured Gemini API keys with structured output."""
+    """Calls configured Gemini API keys with structured output and fast fail-fast on 503."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -111,7 +111,11 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            client = genai.Client(api_key=api_key)
+            # Set a 25-second timeout so Google never hangs your server
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(timeout=25_000)
+            )
 
             config = types.GenerateContentConfig(
                 system_instruction=instructions,
@@ -133,7 +137,7 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
 
             finish_reason = str(getattr(candidate, "finish_reason", ""))
 
-            # Handle safety stop immediately without cycling further keys
+            # Handle safety stop immediately
             if "SAFETY" in finish_reason:
                 raise HTTPException(
                     status_code=422,
@@ -160,12 +164,15 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
             err_msg = str(e).lower()
             logger.warning(f"Gemini {key_name} failed: {e}")
 
-            # If Google has a spike in demand (503), wait 1 second before trying next key
+            # 503 means Google's servers for this model are overloaded.
+            # Do NOT waste time trying other keys—they will all fail with 503.
             if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
-                time.sleep(1)
-                continue
+                raise HTTPException(
+                    status_code=503,
+                    detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
+                )
 
-            # If rate limited (429), try next key
+            # If rate limited (429), rotate to next key
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
@@ -177,14 +184,6 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
                 )
 
             continue
-
-    # Return clean error message if all keys failed
-    err_str = str(last_error).lower()
-    if "503" in err_str or "unavailable" in err_str or "high demand" in err_str:
-        raise HTTPException(
-            status_code=503,
-            detail="Google Gemini is currently experiencing high demand. Please try again in a few moments.",
-        )
 
     raise HTTPException(
         status_code=502,
