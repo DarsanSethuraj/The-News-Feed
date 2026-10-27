@@ -60,6 +60,7 @@ BANNED_PHRASES = [
     "malayalam",
     "asianet",
     "ഏഷ്യാനെറ്റ്",
+    "ഇവിടെ ക്ലിക് ചെയ്യുക",
     ]
 
 def asianet_scraper(url: str):
