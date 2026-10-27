@@ -17,9 +17,10 @@ from Authentication.admin_auth import verify_admin
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Model and key configuration
+# Model configuration
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
+# Configure available API keys
 GEMINI_KEYS = [
     ("KEY_1", os.getenv("GEMINI_API_KEY_1")),
     ("KEY_2", os.getenv("GEMINI_API_KEY_2")),
@@ -30,14 +31,14 @@ GEMINI_KEYS = [
 ]
 GEMINI_KEYS = [(name, key) for name, key in GEMINI_KEYS if key]
 
-# Concurrency lock to prevent duplicate rewrites on the same article
+# Thread safety lock for in-flight requests
 _in_flight_lock = threading.Lock()
 _in_flight_articles = set()
 
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
-# Pydantic schema enforcing structured JSON output from Gemini
+# Pydantic schema for structured output
 class RewriteResponse(BaseModel):
     titles: List[str] = Field(
         min_length=4,
@@ -50,7 +51,7 @@ class RewriteResponse(BaseModel):
 
 
 def extract_first_paragraph(raw_html: str) -> str:
-    """Extracts the first paragraph to serve as the exclusive source for headlines."""
+    """Extracts the first paragraph to serve as the exclusive factual source for headlines."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe"]):
         tag.decompose()
@@ -61,7 +62,6 @@ def extract_first_paragraph(raw_html: str) -> str:
         if text:
             return html.unescape(text)
 
-    # Fallback to leading text if no <p> tag exists
     plain = html.unescape(soup.get_text(" ", strip=True))
     return plain[:500]
 
@@ -78,14 +78,12 @@ def sanitize_html(raw_html: str) -> str:
 
 
 def verify_and_clean_output(data: RewriteResponse) -> dict:
-    """Sanitizes titles (XSS prevention, bullet cleanup) and ensures body HTML safety."""
+    """Sanitizes headlines (strips HTML and bullet artifacts) and cleans HTML body."""
     cleaned_titles = []
     seen = set()
 
     for t in data.titles:
-        # Strip HTML tags to eliminate XSS risks in admin dashboards
         clean_t = re.sub(r"<[^>]*>", "", t).strip()
-        # Strip numbered prefixes (e.g., '1. ', '1) ') or markdown bullet artifacts
         clean_t = re.sub(r"^[0-9#*\-•.)\s]+", "", clean_t).strip()
 
         if not clean_t or clean_t in seen:
@@ -104,8 +102,8 @@ def verify_and_clean_output(data: RewriteResponse) -> dict:
     }
 
 
-def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
-    """Calls Gemini with structured outputs, low thinking level, and multi-key failover."""
+def call_gemini_with_failover(user_input: str, instructions: str, article_id: int) -> dict:
+    """Calls configured Gemini API keys with structured output, timeout, and failover."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -113,14 +111,16 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            client = genai.Client(api_key=api_key)
+            # 25-second client timeout ensures Google never hangs your server
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(timeout=25_000)
+            )
 
             config = types.GenerateContentConfig(
                 system_instruction=instructions,
                 temperature=0.2,
-                # Low thinking level prevents reasoning tokens from exhausting max_output_tokens
-                thinking_config=types.ThinkingConfig(thinking_level="low"),
-                max_output_tokens=16000,
+                max_output_tokens=8000,
                 response_mime_type="application/json",
                 response_schema=RewriteResponse,
             )
@@ -137,40 +137,50 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
 
             finish_reason = str(getattr(candidate, "finish_reason", ""))
 
-            # Stop immediately on safety blocks (flagged content will fail across all keys)
+            # Handle safety block immediately without cycling other keys
             if "SAFETY" in finish_reason:
                 raise HTTPException(
                     status_code=422,
                     detail="Article was flagged by Gemini safety filters. Manual editing is required.",
                 )
 
-            # Check if output hit the token limit
             if "MAX_TOKENS" in finish_reason:
                 raise HTTPException(
                     status_code=422,
                     detail="Article exceeded the maximum token limit. Source text is too long.",
                 )
 
-            # Parse structured response
             if response.parsed:
                 rewrite_obj = response.parsed
             else:
                 rewrite_obj = RewriteResponse(**json.loads(response.text))
 
-            return verify_and_clean_output(rewrite_obj)
+            cleaned_result = verify_and_clean_output(rewrite_obj)
+            cleaned_result["key_used"] = key_name
+
+            # Log the successful key for easy monitoring
+            logger.info(f"✅ Successfully rewrote article {article_id} using {key_name} ({GEMINI_MODEL})")
+            return cleaned_result
 
         except HTTPException:
             raise
         except Exception as e:
             last_error = e
             err_msg = str(e).lower()
-            logger.warning(f"Gemini {key_name} failed: {e}")
+            logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
-            # Rotate to next key on rate limits or quota exhaustion
+            # 503 means Google's servers for this model are overloaded
+            if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
+                )
+
+            # If rate limited (429), try next key
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
-            # Abort immediately if model is missing or misconfigured
+            # If model name is invalid, fail fast
             if "404" in err_msg or "not_found" in err_msg:
                 raise HTTPException(
                     status_code=502,
@@ -209,23 +219,40 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
         raw_title = article.title
         raw_content = article.content
     finally:
-        # Close DB session early so connections aren't tied up during AI generation
         db.close()
 
     try:
         lead_paragraph = extract_first_paragraph(raw_content)
 
         instructions = (
-            "You are a professional Malayalam news editor. Rewrite the given news article into publication-grade Malayalam.\n\n"
-            "Core Editorial Requirements:\n"
-            "1. Output exactly 4 distinct, engaging Malayalam headlines in 'titles'.\n"
-            "2. Headlines MUST be strictly derived from the provided lead paragraph without hallucinating external facts.\n"
-            "3. Restructure the article narrative: DO NOT preserve the source paragraph order or sentence-by-sentence structure. "
-            "Synthesize and reorganize the flow into fresh, natural journalistic paragraphs.\n"
-            "4. Strict Factual Accuracy: DO NOT invent facts, speculate, exaggerate, or omit important facts. "
-            "Retain all original facts, numbers, dates, statistics, and named entities exactly as reported.\n"
-            "5. Formatting: Return the body in 'content', formatted exclusively using safe HTML tags: "
-            "<p>, <b>, <i>, <ul>, <li>, <blockquote>. Do not use markdown backticks or unsupported tags."
+            "You are a seasoned Chief Sub-Editor at a leading Malayalam daily. "
+            "Your objective is to produce a completely original, publication-grade Malayalam news article "
+            "from the provided source material.\n\n"
+            "CRITICAL REWRITING RULES (ORIGINALITY & STRUCTURE):\n"
+            "1. NO SENTENCE-BY-SENTENCE PARAPHRASING: Under no circumstances should you mirror the source's "
+            "sentence order, clause arrangement, or paragraph sequence. Do not simply swap synonyms in place. "
+            "Internalize the facts and write a fresh report from scratch in authentic Malayalam journalistic prose (പത്രശൈലി).\n"
+            "2. FULL ARTICLE DEPTH (NOT A SUMMARY): This must be a comprehensive, full-length news report. "
+            "Do NOT summarize, condense, or omit details. Retain all background context, timeline of events, "
+            "official statements, and nuances—restructured into an engaging, cohesive narrative.\n"
+            "3. INVERTED PYRAMID ARCHITECTURE: Re-architect the story logically:\n"
+            "   - Lead with the most impactful developments (Who, What, Where, When, Why, and How).\n"
+            "   - Follow with supporting evidence, chronological context, and background.\n"
+            "   - Conclude with ongoing investigations, official statements, or next steps.\n"
+            "4. NATURAL MALAYALAM JOURNALISTIC DICTION:\n"
+            "   - Avoid stiff, robotic, or machine-translated Malayalam.\n"
+            "   - Break long, tangled sentences into punchy, clear journalistic sentences.\n"
+            "   - Use authentic Malayalam news connectives (e.g., അതേസമയം, ഇതുസംബന്ധിച്ച്, പ്രാഥമിക വിവരങ്ങൾ പ്രകാരം, റിപ്പോർട്ടുകൾ സൂചിപ്പിക്കുന്നു).\n"
+            "5. STRICT FACTUAL FIDELITY (NO HALLUCINATIONS):\n"
+            "   - Never invent facts, motives, claims, or speculation.\n"
+            "   - Every name, designation, date, statistic, number, location, and legal term must match the source with 100% precision.\n\n"
+            "HEADLINE REQUIREMENTS:\n"
+            "- Provide exactly 4 unique, impactful Malayalam headlines in 'titles'.\n"
+            "- Every headline must be grounded strictly in the core lead facts of the story.\n"
+            "- Headlines must vary in angle (e.g., direct impact, action-oriented, contextual) but avoid sensational clickbait.\n\n"
+            "FORMATTING REQUIREMENTS:\n"
+            "- Return the article body in 'content' exclusively formatted using clean HTML tags: <p>, <b>, <i>, <ul>, <li>, <blockquote>.\n"
+            "- Do not use markdown backticks (```), <h1>/<h2> tags, or unsupported attributes."
         )
 
         user_input = (
@@ -234,11 +261,12 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             f"Full Article Content:\n{raw_content}"
         )
 
-        result = call_gemini_with_failover(user_input, instructions)
+        result = call_gemini_with_failover(user_input, instructions, article_id)
 
         return {
             "success": True,
             "article_id": article_id,
+            "key_used": result.get("key_used"),
             "titles": result["titles"],
             "content": result["content"],
         }
