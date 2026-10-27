@@ -225,7 +225,7 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "Core Editorial Requirements:\n"
             "1. Output exactly 4 distinct, engaging Malayalam headlines in 'titles'.\n"
             "2. Headlines MUST be strictly derived from the provided lead paragraph without hallucinating external facts.\n"
-            "3. Restructure the article narrative: DO NOT preserve the source paragraph order or sentence-by-sentence structure. "
+            "3. Restructure the article narrative: DO NOT follow the structure of the source content.\n"
             "Synthesize and reorganize the flow into fresh, natural journalistic paragraphs.\n"
             "4. Strict Factual Accuracy: DO NOT invent facts, speculate, exaggerate, or omit important facts. "
             "Retain all original facts, numbers, dates, statistics, and named entities exactly as reported.\n"
