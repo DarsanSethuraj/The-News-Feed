@@ -2,7 +2,6 @@ import os
 import re
 import html
 import json
-import time
 import logging
 import threading
 from typing import List
@@ -18,10 +17,10 @@ from Authentication.admin_auth import verify_admin
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Single configured model
+# Model configuration
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
-# Configure available keys
+# Configure available API keys
 GEMINI_KEYS = [
     ("KEY_1", os.getenv("GEMINI_API_KEY_1")),
     ("KEY_2", os.getenv("GEMINI_API_KEY_2")),
@@ -32,6 +31,7 @@ GEMINI_KEYS = [
 ]
 GEMINI_KEYS = [(name, key) for name, key in GEMINI_KEYS if key]
 
+# Thread safety lock for in-flight requests
 _in_flight_lock = threading.Lock()
 _in_flight_articles = set()
 
@@ -51,7 +51,7 @@ class RewriteResponse(BaseModel):
 
 
 def extract_first_paragraph(raw_html: str) -> str:
-    """Extracts the first paragraph to serve as the exclusive source for headlines."""
+    """Extracts the first paragraph to serve as the exclusive factual source for headlines."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe"]):
         tag.decompose()
@@ -67,7 +67,7 @@ def extract_first_paragraph(raw_html: str) -> str:
 
 
 def sanitize_html(raw_html: str) -> str:
-    """Sanitizes HTML content, stripping out disallowed tags and all attributes."""
+    """Sanitizes HTML content, stripping out disallowed tags and all tag attributes."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup.find_all(True):
         if tag.name not in ALLOWED_TAGS:
@@ -78,7 +78,7 @@ def sanitize_html(raw_html: str) -> str:
 
 
 def verify_and_clean_output(data: RewriteResponse) -> dict:
-    """Sanitizes headlines (strips HTML and bullets) and cleans HTML body."""
+    """Sanitizes headlines (strips HTML and bullet artifacts) and cleans HTML body."""
     cleaned_titles = []
     seen = set()
 
@@ -102,8 +102,8 @@ def verify_and_clean_output(data: RewriteResponse) -> dict:
     }
 
 
-def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
-    """Calls configured Gemini API keys with structured output and fast fail-fast on 503."""
+def call_gemini_with_failover(user_input: str, instructions: str, article_id: int) -> dict:
+    """Calls configured Gemini API keys with structured output, timeout, and failover."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -111,7 +111,7 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            # Set a 25-second timeout so Google never hangs your server
+            # 25-second client timeout ensures Google never hangs your server
             client = genai.Client(
                 api_key=api_key,
                 http_options=types.HttpOptions(timeout=25_000)
@@ -137,7 +137,7 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
 
             finish_reason = str(getattr(candidate, "finish_reason", ""))
 
-            # Handle safety stop immediately
+            # Handle safety block immediately without cycling other keys
             if "SAFETY" in finish_reason:
                 raise HTTPException(
                     status_code=422,
@@ -155,24 +155,28 @@ def call_gemini_with_failover(user_input: str, instructions: str) -> dict:
             else:
                 rewrite_obj = RewriteResponse(**json.loads(response.text))
 
-            return verify_and_clean_output(rewrite_obj)
+            cleaned_result = verify_and_clean_output(rewrite_obj)
+            cleaned_result["key_used"] = key_name
+
+            # Log the successful key for easy monitoring
+            logger.info(f"✅ Successfully rewrote article {article_id} using {key_name} ({GEMINI_MODEL})")
+            return cleaned_result
 
         except HTTPException:
             raise
         except Exception as e:
             last_error = e
             err_msg = str(e).lower()
-            logger.warning(f"Gemini {key_name} failed: {e}")
+            logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
-            # 503 means Google's servers for this model are overloaded.
-            # Do NOT waste time trying other keys—they will all fail with 503.
+            # 503 means Google's servers for this model are overloaded
             if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
                 raise HTTPException(
                     status_code=503,
                     detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
                 )
 
-            # If rate limited (429), rotate to next key
+            # If rate limited (429), try next key
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
@@ -257,11 +261,12 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             f"Full Article Content:\n{raw_content}"
         )
 
-        result = call_gemini_with_failover(user_input, instructions)
+        result = call_gemini_with_failover(user_input, instructions, article_id)
 
         return {
             "success": True,
             "article_id": article_id,
+            "key_used": result.get("key_used"),
             "titles": result["titles"],
             "content": result["content"],
         }
