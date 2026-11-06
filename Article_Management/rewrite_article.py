@@ -50,19 +50,19 @@ class VerifiedRewriteResponse(BaseModel):
 
 
 def extract_first_paragraph(raw_html: str) -> str:
-    """Extracts first paragraph to serve as exclusive factual lead for headlines."""
+    """Extracts the first substantive paragraph to serve as factual lead for headlines."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe"]):
         tag.decompose()
 
-    p = soup.find("p")
-    if p:
+    # Look for the first paragraph with real journalistic content (>= 15 words)
+    for p in soup.find_all("p"):
         text = p.get_text(" ", strip=True)
-        if text:
+        if text and len(text.split()) >= 15:
             return html.unescape(text)
 
     plain = html.unescape(soup.get_text(" ", strip=True))
-    return plain[:500]
+    return plain[:600]
 
 
 def sanitize_html(raw_html: str) -> str:
@@ -77,13 +77,15 @@ def sanitize_html(raw_html: str) -> str:
 
 
 def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
-    """Sanitizes headlines (strips HTML/bullets) and cleans HTML body."""
+    """Sanitizes headlines (strips HTML and numbered bullets) and cleans HTML body."""
     cleaned_titles = []
     seen = set()
 
     for t in data.titles:
+        # Strip any raw HTML tags
         clean_t = re.sub(r"<[^>]*>", "", t).strip()
-        clean_t = re.sub(r"^[0-9#*\-•.)\s]+", "", clean_t).strip()
+        # Strip only list prefixes like '1. ', '2) ', '• ', '# ' without touching years/numbers
+        clean_t = re.sub(r"^(?:[0-9]{1,2}[.)\]]\s*|[#*\-•]\s*)", "", clean_t).strip()
 
         if not clean_t or clean_t in seen:
             raise ValueError("All 4 headlines must be distinct and non-empty.")
@@ -258,6 +260,7 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "success": True,
             "article_id": article_id,
             "key_used": result.get("key_used"),
+            "audit_notes": result.get("audit_notes"),
             "titles": result["titles"],
             "content": result["content"],
         }
