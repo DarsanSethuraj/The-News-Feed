@@ -113,9 +113,10 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
 
     for key_name, api_key in GEMINI_KEYS:
         try:
+            # 120,000 milliseconds = 120 seconds (gives Google ample time for Malayalam token generation)
             client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(timeout=60.0)
+                http_options=types.HttpOptions(timeout=120_000)
             )
 
             config = types.GenerateContentConfig(
