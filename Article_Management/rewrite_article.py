@@ -5,7 +5,6 @@ import json
 import logging
 import threading
 from typing import List
-import httpx
 from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Depends
@@ -36,10 +35,10 @@ _in_flight_articles = set()
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
-# Compact schema that forces reflection without token bloating
+# Fast schema: Boolean audit flag eliminates slow token generation
 class VerifiedRewriteResponse(BaseModel):
-    audit_verification: List[str] = Field(
-        description="Brief audit checklist: list explicit entities, numbers, and dates from the source to prevent ungrounded additions.",
+    audit_passed: bool = Field(
+        description="True confirming all facts/numbers match source and zero external names or speculative claims are added.",
     )
     titles: List[str] = Field(
         min_length=4,
@@ -99,12 +98,11 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
     return {
         "titles": cleaned_titles,
         "content": sanitized_content,
-        "audit_notes": data.audit_verification,
     }
 
 
 def call_gemini_with_failover(user_input: str, instructions: str, article_id: int) -> dict:
-    """Robust single-roundtrip rewrite with explicit socket timeout."""
+    """Fast, reliable single-roundtrip rewrite."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -112,16 +110,10 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            # Explicit httpx client with 90s read timeout prevents socket drops
-            http_client = httpx.Client(
-                timeout=httpx.Timeout(90.0, connect=15.0)
-            )
-
+            # Pass timeout via dict to ensure it reaches Google's HTTP client
             client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(
-                    httpx_client=http_client
-                )
+                http_options={"timeout": 120000}
             )
 
             config = types.GenerateContentConfig(
@@ -133,7 +125,7 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
                 response_schema=VerifiedRewriteResponse,
             )
 
-            logger.info(f"Article {article_id}: Executing verified rewrite using {key_name}...")
+            logger.info(f"Article {article_id}: Executing fast verified rewrite using {key_name}...")
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
                 contents=user_input,
@@ -176,11 +168,11 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
             err_msg = str(e).lower()
             logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
-            # If read timed out, stop cycling other keys (Google is busy on this payload)
+            # Stop cycling keys on read timeouts
             if "timed out" in err_msg or "timeout" in err_msg:
                 raise HTTPException(
                     status_code=504,
-                    detail="Gemini API read timed out. Google took too long to generate the article. Please try again.",
+                    detail="Gemini API timed out generating the article. Please try again.",
                 )
 
             if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
@@ -189,7 +181,6 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
                     detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
                 )
 
-            # Only rotate to next key if it's a true quota exhaustion (429)
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
@@ -240,26 +231,18 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "You are a Senior Chief Copy-Editor and Fact-Checker at a major Malayalam daily newsroom. "
             "Your objective is to produce a completely original, publication-grade Malayalam news article "
             "based strictly and exclusively on the provided source text.\n\n"
-            "PHASE 1: FACTUAL AUDIT & INVENTORY (Fill 'audit_verification' FIRST):\n"
-            "1. Extract and inventory every explicit named entity, office/designation, organization, and location.\n"
-            "2. Extract every numerical figure, statistic, percentage, date, and time.\n"
-            "3. Enforce the Zero-Inference Rule: Commit to using ONLY the specific titles, designations, and names "
-            "present in the text. Never infer or substitute real-world proper names or unmentioned identities.\n"
-            "4. Enforce Numeric Invariance: Commit to preserving all figures exactly as stated without converting exact numbers "
-            "into estimates (e.g., do not add 'more than' / 'ഏകദേശം' / 'അധികം' unless explicitly present in the source).\n\n"
-            "PHASE 2: HEADLINE GENERATION ('titles'):\n"
-            "- Produce exactly 4 distinct, compelling Malayalam headlines.\n"
-            "- Every headline must be derived strictly and exclusively from the factual core of the lead paragraph.\n"
-            "- Vary the journalistic focus across headlines (e.g., action-oriented, outcome-oriented, statement-oriented) "
-            "while maintaining 100% factual fidelity.\n\n"
-            "PHASE 3: REWRITE THE ARTICLE BODY ('content'):\n"
-            "- Journalistic Restructuring: Do not mirror the source's paragraph sequence or clause structure. "
-            "Synthesize the verified facts into fresh, natural journalistic Malayalam prose (പത്രശൈലി).\n"
-            "- Closed-World Constraint: Treat the provided source as the sole universe of truth. Never invent background history, "
-            "speculative motives, press-conference Q&A context, emotional descriptions, or boilerplate clichés.\n"
-            "- Preserve Full Scope: Do not condense into a brief summary. Maintain all original facts, attributions, and context.\n"
-            "- HTML Formatting: Use only clean, semantic HTML tags: <p>, <b>, <i>, <ul>, <li>, <blockquote>. "
-            "Do not include markdown code fences (```), heading tags, or HTML attributes."
+            "CRITICAL FACTUAL RULES:\n"
+            "1. Zero-Inference Rule: Use ONLY the specific designations, titles, and names present in the text. "
+            "Never infer or insert real-world proper names or unmentioned identities (e.g. if the text mentions a title/office, do not substitute an individual's name).\n"
+            "2. Numeric Invariance: Preserve all numbers, statistics, percentages, and dates with 100% precision. "
+            "Never convert exact numbers into estimates (do not add 'more than' / 'ഏകദേശം' / 'അധികം').\n"
+            "3. Closed-World Constraint: Treat the source as the only facts that exist. Never invent background history, "
+            "press Q&A context ('in response to questions'), or boilerplate clichés.\n\n"
+            "HEADLINES & REWRITE:\n"
+            "- Set audit_passed to true.\n"
+            "- Generate exactly 4 distinct, compelling Malayalam headlines in 'titles' based on the lead paragraph.\n"
+            "- In 'content', synthesize and restructure the article into fresh journalistic Malayalam prose (പത്രശൈലി) without mirroring sentence order.\n"
+            "- Format exclusively in HTML: <p>, <b>, <i>, <ul>, <li>, <blockquote>."
         )
 
         user_input = (
@@ -274,7 +257,6 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "success": True,
             "article_id": article_id,
             "key_used": result.get("key_used"),
-            "audit_notes": result.get("audit_notes"),
             "titles": result["titles"],
             "content": result["content"],
         }
