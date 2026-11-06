@@ -5,6 +5,7 @@ import json
 import logging
 import threading
 from typing import List
+import httpx
 from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, HTTPException, Depends
@@ -35,9 +36,10 @@ _in_flight_articles = set()
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
+# Compact schema that forces reflection without token bloating
 class VerifiedRewriteResponse(BaseModel):
     audit_verification: List[str] = Field(
-        description="Self-audit checklist: Extract all explicitly mentioned entities, statistics, and dates from the source, and verify zero external additions.",
+        description="Brief audit checklist: list explicit entities, numbers, and dates from the source to prevent ungrounded additions.",
     )
     titles: List[str] = Field(
         min_length=4,
@@ -50,12 +52,11 @@ class VerifiedRewriteResponse(BaseModel):
 
 
 def extract_first_paragraph(raw_html: str) -> str:
-    """Extracts the first substantive paragraph to serve as factual lead for headlines."""
+    """Extracts first substantive paragraph to serve as factual lead for headlines."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe"]):
         tag.decompose()
 
-    # Look for the first paragraph with real journalistic content (>= 15 words)
     for p in soup.find_all("p"):
         text = p.get_text(" ", strip=True)
         if text and len(text.split()) >= 15:
@@ -82,9 +83,7 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
     seen = set()
 
     for t in data.titles:
-        # Strip any raw HTML tags
         clean_t = re.sub(r"<[^>]*>", "", t).strip()
-        # Strip only list prefixes like '1. ', '2) ', '• ', '# ' without touching years/numbers
         clean_t = re.sub(r"^(?:[0-9]{1,2}[.)\]]\s*|[#*\-•]\s*)", "", clean_t).strip()
 
         if not clean_t or clean_t in seen:
@@ -105,7 +104,7 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
 
 
 def call_gemini_with_failover(user_input: str, instructions: str, article_id: int) -> dict:
-    """Single roundtrip generation with reflection and key failover."""
+    """Robust single-roundtrip rewrite with explicit socket timeout."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -113,17 +112,23 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            # 120,000 milliseconds = 120 seconds (gives Google ample time for Malayalam token generation)
+            # Explicit httpx client with 90s read timeout prevents socket drops
+            http_client = httpx.Client(
+                timeout=httpx.Timeout(90.0, connect=15.0)
+            )
+
             client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(timeout=120_000)
+                http_options=types.HttpOptions(
+                    httpx_client=http_client
+                )
             )
 
             config = types.GenerateContentConfig(
                 system_instruction=instructions,
                 temperature=0.0,
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
-                max_output_tokens=8000,
+                max_output_tokens=6000,
                 response_mime_type="application/json",
                 response_schema=VerifiedRewriteResponse,
             )
@@ -171,12 +176,20 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
             err_msg = str(e).lower()
             logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
+            # If read timed out, stop cycling other keys (Google is busy on this payload)
+            if "timed out" in err_msg or "timeout" in err_msg:
+                raise HTTPException(
+                    status_code=504,
+                    detail="Gemini API read timed out. Google took too long to generate the article. Please try again.",
+                )
+
             if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
                 raise HTTPException(
                     status_code=503,
                     detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
                 )
 
+            # Only rotate to next key if it's a true quota exhaustion (429)
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
