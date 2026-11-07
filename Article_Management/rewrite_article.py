@@ -121,7 +121,7 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
             client = genai.Client(api_key=api_key)
 
             config = types.GenerateContentConfig(
-                temperature=0.0,
+                temperature=0.2,  # 0.2 gives linguistic flexibility to restructure without hallucinating
                 max_output_tokens=6000,
                 response_mime_type="application/json",
                 response_schema=VerifiedRewriteResponse,
@@ -227,27 +227,29 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
         # Unified concise prompt (identical structure to the successful standalone test)
         prompt_payload = (
             "You are a Senior Chief Copy-Editor at a leading Malayalam daily news organization. "
-            "Your objective is to produce a completely fresh, publication-ready Malayalam news report "
+            "Your objective is to produce an entirely original, publication-grade Malayalam news report "
             "based strictly and exclusively on the provided source text.\n\n"
-            "STRUCTURAL ORIGINALITY (PREVENT VERBATIM COPYING):\n"
-            "1. REORGANIZE THE NARRATIVE FLOW: Do not preserve the source text's paragraph order, sentence sequence, "
-            "or clause arrangement. Synthesize the core facts and reconstruct the story from scratch in natural, flowing journalistic prose (പത്രശൈലി).\n"
-            "2. NO SYNONYM-SWAPPING: Under no circumstances should you merely substitute synonyms while keeping the original sentence structure intact.\n"
-            "3. NO ARTIFICIAL BULLET POINTS: Write in coherent, professional narrative paragraphs (<p>). Do not convert narrative text or speech statements into bulleted lists unless the original source was an explicit itemized list.\n"
-            "4. MATCH THE DEPTH: Preserve all relevant facts, background context, and statements present in the text without omitting details or producing an overly condensed summary.\n\n"
-            "STRICT FACTUAL INTEGRITY (ZERO HALLUCINATIONS):\n"
-            "1. CLOSED-WORLD CONSTRAINT: Treat the provided text as the sole source of truth in the universe. "
-            "Never invent facts, background history, causes, motives, press Q&A context, or speculative details not explicitly stated.\n"
-            "2. ZERO ENTITY INFERENCE: Use only the specific names, titles, designations, and entities explicitly mentioned in the text. "
-            "Never infer real-world identities, full names, or affiliations that are not directly stated.\n"
-            "3. NUMERIC INVARIANCE: Every number, statistic, percentage, date, time, and numerical claim must be preserved with 100% precision. "
-            "Never convert exact figures into approximations (e.g., do not add 'more than' / 'ഏകദേശം' / 'അധികം' unless present in the source).\n"
-            "4. DIRECT STATEMENTS: Preserve the exact meaning, attribution, and context of all quotes and claims.\n\n"
+            "MANDATORY STRUCTURAL RE-SYNTHESIS (STOP VERBATIM COPYING):\n"
+            "1. NO CHRONOLOGICAL MIRRORING: Under no circumstances should you reproduce the source text sentence-by-sentence. "
+            "Do not merely swap synonyms or append reporting tags (such as 'വ്യക്തമാക്കി' or 'ചോദിച്ചു') to existing sentences.\n"
+            "2. THEMATIC GROUPING ARCHITECTURE: Restructure the narrative into logical news themes rather than the source's order:\n"
+            "   - Lead Overview: Synthesize the primary development, central incident, or overarching claim into an active opening.\n"
+            "   - Core Evidence & Data: Consolidate all metrics, figures, statistics, specific allegations, and concrete dates into a dedicated, cohesive section.\n"
+            "   - Procedural Context & Perspectives: Group background history, procedural findings, official statements, and counter-arguments together.\n"
+            "   - Resolution / Forward Status: Conclude with the current status, pending investigations, demands, or scheduled next steps.\n"
+            "3. AUTHENTIC JOURNALISTIC PROSE: Write natural, publication-grade Malayalam newspaper prose (പത്രശൈലി). "
+            "Combine fragmented sentences into clean, authoritative narrative paragraphs.\n"
+            "4. NO ARTIFICIAL FORMATTING: Deliver the body strictly in flowing narrative paragraphs (<p>). Do not convert spoken statements into bullet lists.\n\n"
+            "STRICT FACTUAL FIDELITY (ZERO HALLUCINATIONS):\n"
+            "1. CLOSED-WORLD RULE: Treat the provided text as the sole universe of truth. Never invent outside history, "
+            "unmentioned individuals, speculative causes, motives, or boilerplate filler not directly asserted in the text.\n"
+            "2. ZERO INFERENCE: Use only the exact designations, titles, organizations, and names present in the text.\n"
+            "3. NUMERIC INVARIANCE: Every number, metric, percentage, date, and statistic must remain 100% exact. "
+            "Never convert exact figures into approximations (e.g., do not add 'ഏകദേശം' / 'അധികം' unless explicitly present in the source).\n\n"
             "OUTPUT SPECIFICATIONS:\n"
             "- Set audit_passed to true.\n"
-            "- Generate exactly 4 distinct, compelling Malayalam headlines in 'titles' grounded in the verified lead facts.\n"
-            "- Return the rewritten article body in 'content' formatted strictly in clean HTML: <p>, <b>, <i>, <blockquote>. "
-            "Do not include markdown code fences (```), heading tags (<h1>-<h6>), or HTML attributes.\n\n"
+            "- Generate exactly 4 distinct, compelling Malayalam headlines in 'titles' derived from the lead facts.\n"
+            "- Return the article body in 'content' formatted strictly in clean HTML: <p>, <b>, <i>, <blockquote>.\n\n"
             f"Original Title: {raw_title}\n\n"
             f"Lead News: {lead_paragraph}\n\n"
             f"Full Source Content:\n{cleaned_content}"
