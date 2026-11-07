@@ -20,7 +20,6 @@ router = APIRouter()
 # Configured model
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
-# Configure available keys
 GEMINI_KEYS = [
     ("KEY_1", os.getenv("GEMINI_API_KEY_1")),
     ("KEY_2", os.getenv("GEMINI_API_KEY_2")),
@@ -37,23 +36,22 @@ _in_flight_articles = set()
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
-# Fast schema: Boolean audit flag eliminates slow token generation
 class VerifiedRewriteResponse(BaseModel):
     audit_passed: bool = Field(
-        description="True confirming all facts/numbers match source and zero external names or speculative claims are added.",
+        description="True confirming all facts and numbers match source text with zero outside additions.",
     )
     titles: List[str] = Field(
         min_length=4,
         max_length=4,
-        description="Exactly 4 distinct Malayalam headlines based strictly on the lead paragraph",
+        description="Exactly 4 distinct Malayalam headlines based on the lead news facts",
     )
     content: str = Field(
-        description="Final publication-ready Malayalam article body formatted exclusively in safe HTML",
+        description="Rewritten Malayalam news article formatted in safe HTML using <p>, <b>, <i>, <ul>, <li>",
     )
 
 
 def clean_html_noise(raw_html: str) -> str:
-    """Removes scripts, styles, and iframe noise while preserving all article HTML."""
+    """Removes scripts, styles, and iframe noise while preserving news content."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe", "header", "footer", "nav", "svg"]):
         tag.decompose()
@@ -111,8 +109,8 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
     }
 
 
-def call_gemini_with_failover(user_input: str, instructions: str, article_id: int) -> dict:
-    """Fast, single-roundtrip rewrite."""
+def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
+    """Calls Gemini with structured outputs, fast execution, and transparent error reporting."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -123,17 +121,16 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
             client = genai.Client(api_key=api_key)
 
             config = types.GenerateContentConfig(
-                system_instruction=instructions,
                 temperature=0.0,
                 max_output_tokens=6000,
                 response_mime_type="application/json",
                 response_schema=VerifiedRewriteResponse,
             )
 
-            logger.info(f"Article {article_id}: Executing rewrite with {GEMINI_MODEL} using {key_name}...")
+            logger.info(f"Article {article_id}: Sending rewrite request to {GEMINI_MODEL} via {key_name}...")
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
-                contents=user_input,
+                contents=prompt_payload,
                 config=config,
             )
 
@@ -173,32 +170,27 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
             err_msg = str(e).lower()
             logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
-            if "timed out" in err_msg or "timeout" in err_msg:
-                raise HTTPException(
-                    status_code=504,
-                    detail="Gemini API timed out generating the article. Please try again.",
-                )
-
-            if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
-                )
-
+            # If quota exhausted (429), try next key
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
+            # Model not found
             if "404" in err_msg or "not_found" in err_msg:
                 raise HTTPException(
                     status_code=502,
                     detail=f"Model '{GEMINI_MODEL}' not found or unsupported.",
                 )
 
+            # If it's truly a 503 from Google
+            if "503" in err_msg or "unavailable" in err_msg:
+                continue
+
             continue
 
+    # Surface the real underlying error so you can see it in UI
     raise HTTPException(
         status_code=502,
-        detail=f"All Gemini API keys failed during pipeline. Last error: {last_error}",
+        detail=f"Rewrite failed across configured keys. Error: {last_error}",
     )
 
 
@@ -232,31 +224,23 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
         lead_paragraph = extract_first_paragraph(raw_content)
         cleaned_content = clean_html_noise(raw_content)
 
-        instructions = (
-            "You are a Senior Chief Copy-Editor and Fact-Checker at a major Malayalam daily newsroom. "
-            "Your objective is to produce a completely original, publication-grade Malayalam news article "
-            "based strictly and exclusively on the provided source text.\n\n"
-            "CRITICAL FACTUAL RULES:\n"
-            "1. Zero-Inference Rule: Use ONLY the specific designations, titles, and names present in the text. "
-            "Never infer or insert real-world proper names or unmentioned identities (e.g. if the text mentions a title/office, do not substitute an individual's name).\n"
-            "2. Numeric Invariance: Preserve all numbers, statistics, percentages, and dates with 100% precision. "
-            "Never convert exact numbers into estimates (do not add 'more than' / 'ഏകദേശം' / 'അധികം').\n"
-            "3. Closed-World Constraint: Treat the source as the only facts that exist. Never invent background history, "
-            "press Q&A context ('in response to questions'), or boilerplate clichés.\n\n"
-            "HEADLINES & REWRITE:\n"
-            "- Set audit_passed to true.\n"
-            "- Generate exactly 4 distinct, compelling Malayalam headlines in 'titles' based on the lead paragraph.\n"
-            "- In 'content', synthesize and restructure the article into fresh journalistic Malayalam prose (പത്രശൈലി) without mirroring sentence order.\n"
-            "- Format exclusively in HTML: <p>, <b>, <i>, <ul>, <li>, <blockquote>."
-        )
-
-        user_input = (
+        # Unified concise prompt (identical structure to the successful standalone test)
+        prompt_payload = (
+            "You are a professional Malayalam news copy-editor. "
+            "Rewrite the provided news article into fresh, original publication-grade Malayalam (പത്രശൈലി).\n\n"
+            "STRICT RULES:\n"
+            "1. Output exactly 4 distinct Malayalam headlines in 'titles' based on the lead news.\n"
+            "2. In 'content', restructure the story with authentic journalistic flow without copying sentence-by-sentence order.\n"
+            "3. ZERO OUTSIDE FACTS: Do not invent names, designations, dates, statistics, or motives not in the source text.\n"
+            "4. Numeric Invariance: Keep all statistics, numbers, and dates 100% exact.\n"
+            "5. Format 'content' exclusively using clean HTML: <p>, <b>, <i>, <ul>, <li>.\n"
+            "6. Set audit_passed to true.\n\n"
             f"Original Title: {raw_title}\n\n"
-            f"Lead Paragraph: {lead_paragraph}\n\n"
+            f"Lead News: {lead_paragraph}\n\n"
             f"Full Source Content:\n{cleaned_content}"
         )
 
-        result = call_gemini_with_failover(user_input, instructions, article_id)
+        result = call_gemini_with_failover(prompt_payload, article_id)
 
         return {
             "success": True,
