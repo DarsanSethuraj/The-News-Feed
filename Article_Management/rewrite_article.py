@@ -4,6 +4,7 @@ import html
 import json
 import logging
 import threading
+import unicodedata
 from typing import List
 from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
@@ -17,9 +18,10 @@ from Authentication.admin_auth import verify_admin
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Configured model
+# Model configuration
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
+# Multi-key failover configuration
 GEMINI_KEYS = [
     ("KEY_1", os.getenv("GEMINI_API_KEY_1")),
     ("KEY_2", os.getenv("GEMINI_API_KEY_2")),
@@ -36,15 +38,26 @@ _in_flight_articles = set()
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
+# Schema enforcing Fact Extraction FIRST, followed by Fresh Article Composition
 class VerifiedRewriteResponse(BaseModel):
-    audit_passed: bool = Field(description="True confirming all facts/numbers match source text.")
-    extracted_facts: List[str] = Field(description="Brief list of core factual points (who, what, names, numbers) extracted from the source.")
-    titles: List[str] = Field(min_length=4, max_length=4, description="4 distinct Malayalam headlines.")
-    content: str = Field(description="Completely fresh Malayalam news body written using ONLY the extracted facts, without borrowing source sentences.")
+    audit_passed: bool = Field(
+        description="True confirming all facts and figures match the source with zero external hallucinations."
+    )
+    extracted_facts: List[str] = Field(
+        description="Brief list of explicit core facts, names, figures, and attributions extracted from the text."
+    )
+    titles: List[str] = Field(
+        min_length=4,
+        max_length=4,
+        description="Exactly 4 distinct, engaging Malayalam headlines derived strictly from the core news lead."
+    )
+    content: str = Field(
+        description="Completely original Malayalam news body written strictly using the extracted facts in flowing HTML paragraphs."
+    )
 
 
 def clean_html_noise(raw_html: str) -> str:
-    """Removes scripts, styles, and iframe noise while preserving news content."""
+    """Removes scripts, styles, iframes, and non-content noise while preserving source text."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe", "header", "footer", "nav", "svg"]):
         tag.decompose()
@@ -78,12 +91,15 @@ def sanitize_html(raw_html: str) -> str:
 
 
 def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
-    """Sanitizes headlines (strips HTML and numbered bullets) and cleans HTML body."""
+    """Sanitizes headlines, normalizes Unicode glyphs, and cleans HTML body."""
     cleaned_titles = []
     seen = set()
 
     for t in data.titles:
-        clean_t = re.sub(r"<[^>]*>", "", t).strip()
+        # Normalize Unicode to fix fragmented Malayalam vowel signs
+        t_norm = unicodedata.normalize("NFC", t)
+        clean_t = re.sub(r"<[^>]*>", "", t_norm).strip()
+        # Strip only list prefixes (e.g., '1. ', '2) ', '• ') without touching numbers/years
         clean_t = re.sub(r"^(?:[0-9]{1,2}[.)\]]\s*|[#*\-•]\s*)", "", clean_t).strip()
 
         if not clean_t or clean_t in seen:
@@ -92,18 +108,20 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
         seen.add(clean_t)
         cleaned_titles.append(clean_t)
 
-    sanitized_content = sanitize_html(data.content)
+    content_norm = unicodedata.normalize("NFC", data.content)
+    sanitized_content = sanitize_html(content_norm)
     if not sanitized_content:
         raise ValueError("Rewritten content cannot be empty.")
 
     return {
         "titles": cleaned_titles,
         "content": sanitized_content,
+        "extracted_facts": data.extracted_facts,
     }
 
 
 def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
-    """Calls Gemini with structured outputs, fast execution, and transparent error reporting."""
+    """Fast, single-roundtrip rewrite with explicit socket timeout."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -111,16 +129,22 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            client = genai.Client(api_key=api_key)
+            # Explicit 120s transport timeout avoids socket drops
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(
+                    client_args={"timeout": 120.0}
+                )
+            )
 
             config = types.GenerateContentConfig(
-                temperature=0.2,  # 0.2 gives linguistic flexibility to restructure without hallucinating
+                temperature=0.2,  # 0.2 provides creative phrasing without factual drift
                 max_output_tokens=6000,
                 response_mime_type="application/json",
                 response_schema=VerifiedRewriteResponse,
             )
 
-            logger.info(f"Article {article_id}: Sending rewrite request to {GEMINI_MODEL} via {key_name}...")
+            logger.info(f"Article {article_id}: Executing rewrite with {GEMINI_MODEL} using {key_name}...")
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
                 contents=prompt_payload,
@@ -163,27 +187,33 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
             err_msg = str(e).lower()
             logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
-            # If quota exhausted (429), try next key
+            if "timed out" in err_msg or "timeout" in err_msg:
+                raise HTTPException(
+                    status_code=504,
+                    detail="Gemini API read timed out. Google took too long to generate the article. Please try again.",
+                )
+
+            if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
+                )
+
+            # Quota exhausted: try next key
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
-            # Model not found
             if "404" in err_msg or "not_found" in err_msg:
                 raise HTTPException(
                     status_code=502,
                     detail=f"Model '{GEMINI_MODEL}' not found or unsupported.",
                 )
 
-            # If it's truly a 503 from Google
-            if "503" in err_msg or "unavailable" in err_msg:
-                continue
-
             continue
 
-    # Surface the real underlying error so you can see it in UI
     raise HTTPException(
         status_code=502,
-        detail=f"Rewrite failed across configured keys. Error: {last_error}",
+        detail=f"All Gemini API keys failed during pipeline. Last error: {last_error}",
     )
 
 
@@ -217,19 +247,26 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
         lead_paragraph = extract_first_paragraph(raw_content)
         cleaned_content = clean_html_noise(raw_content)
 
-        # Unified concise prompt (identical structure to the successful standalone test)
         prompt_payload = (
             "You are a Senior Chief Copy-Editor at a prestigious Malayalam newspaper desk. "
-            "Your task is to take the facts from the source text and write a BRAND NEW, publication-grade news report.\n\n"
-            "TWO-STEP WRITING PROCESS:\n"
-            "1. INVENTORY ('extracted_facts'): Extract the raw factual points, names, designations, and numbers into brief bullets.\n"
-            "2. FRESH COMPOSITION ('content'): Now, put the original sentences away. Using ONLY the raw facts you extracted, "
-            "compose an entirely original Malayalam news report from scratch in authentic newspaper diction (പത്രശൈലി).\n\n"
-            "ABSOLUTE PROHIBITIONS:\n"
-            "- DO NOT copy source sentences or merely swap out occasional words.\n"
-            "- DO NOT invent any facts, numbers, or names not in the extracted list.\n"
-            "- DO NOT use bullet points in the 'content' field. Write strictly in rich, narrative news paragraphs (<p>).\n\n"
+            "Your objective is to produce a completely original, publication-grade Malayalam news dispatch "
+            "based strictly and exclusively on the verified facts of the provided source text.\n\n"
+            "TWO-STAGE COMPOSITION PROCESS:\n"
+            "STAGE 1: FACTUAL INVENTORY ('extracted_facts')\n"
+            "- Extract and list the core factual points, named entities, proper names, statistics, dates, and official quotes.\n"
+            "- Strict Proper Noun Rule: Verify every proper name character-by-character. Do NOT alter, abbreviate, or add suffixes to real-world names (e.g., 'നരേന്ദ്ര മോദി' must remain exactly 'നരേന്ദ്ര മോദി', never alter with suffixes like 'നരേന്ദ്രപൂർ').\n"
+            "- Closed-World Rule: Extract ONLY facts present in the text. Never infer or introduce outside facts.\n\n"
+            "STAGE 2: ORIGINAL NEWS COMPOSITION ('content')\n"
+            "- Put the source text's sentences away. Using ONLY the raw facts in 'extracted_facts', compose a fresh, authoritative news report from scratch.\n"
+            "- Zero Verbatim Copying: Do NOT follow the source text sentence-by-sentence or merely substitute synonyms. Synthesize and re-architect the flow into natural, professional Malayalam newspaper prose (പത്രശൈലി).\n"
+            "- No Artificial Lists: The body must flow exclusively in rich, narrative HTML paragraphs (<p>). Do not convert spoken remarks or allegations into bulleted lists.\n"
+            "- Numeric Invariance: Preserve all numbers, counts, and dates with 100% precision without converting exact figures into approximations.\n\n"
+            "OUTPUT SPECIFICATIONS:\n"
+            "- Set audit_passed to true.\n"
+            "- Output 4 distinct Malayalam headlines in 'titles' grounded in the lead news.\n"
+            "- Output rewritten body in 'content' using safe HTML: <p>, <b>, <i>, <blockquote>.\n\n"
             f"Original Title: {raw_title}\n\n"
+            f"Lead News: {lead_paragraph}\n\n"
             f"Full Source Content:\n{cleaned_content}"
         )
 
