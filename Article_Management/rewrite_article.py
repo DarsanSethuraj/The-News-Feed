@@ -18,10 +18,8 @@ from Authentication.admin_auth import verify_admin
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Model configuration
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
-# Multi-key failover configuration
 GEMINI_KEYS = [
     ("KEY_1", os.getenv("GEMINI_API_KEY_1")),
     ("KEY_2", os.getenv("GEMINI_API_KEY_2")),
@@ -38,49 +36,37 @@ _in_flight_articles = set()
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
-# Schema enforcing Fact Extraction FIRST, followed by Fresh Article Composition
-class VerifiedRewriteResponse(BaseModel):
-    audit_passed: bool = Field(
-        description="True confirming all facts and figures match the source with zero external hallucinations."
-    )
-    extracted_facts: List[str] = Field(
-        description="Brief list of explicit core facts, names, figures, and attributions extracted from the text."
-    )
-    titles: List[str] = Field(
-        min_length=4,
-        max_length=4,
-        description="Exactly 4 distinct, engaging Malayalam headlines derived strictly from the core news lead."
-    )
-    content: str = Field(
-        description="Completely original Malayalam news body written strictly using the extracted facts in flowing HTML paragraphs."
+# ==========================================
+# 1. Pydantic Schemas for Critic Flow
+# ==========================================
+
+class RewriteDraft(BaseModel):
+    titles: List[str] = Field(min_length=4, max_length=4, description="4 distinct, engaging Malayalam headlines")
+    content: str = Field(description="Rewritten Malayalam news article in HTML paragraphs")
+
+
+class CritiqueReport(BaseModel):
+    has_faults: bool = Field(description="True if ANY factual corruption, major omission, or editorial bias exists.")
+    specific_faults: List[str] = Field(
+        default_factory=list,
+        description="Clear, actionable points of what needs fixing in the draft."
     )
 
+
+# ==========================================
+# 2. Text and HTML Sanitization
+# ==========================================
 
 def clean_html_noise(raw_html: str) -> str:
-    """Removes scripts, styles, iframes, and non-content noise while preserving source text."""
+    """Removes scripts, styles, and non-content noise while preserving article text."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup(["script", "style", "noscript", "iframe", "header", "footer", "nav", "svg"]):
         tag.decompose()
     return str(soup)
 
 
-def extract_first_paragraph(raw_html: str) -> str:
-    """Extracts first substantive paragraph to serve as factual lead for headlines."""
-    soup = BeautifulSoup(raw_html or "", "html.parser")
-    for tag in soup(["script", "style", "noscript", "iframe"]):
-        tag.decompose()
-
-    for p in soup.find_all("p"):
-        text = p.get_text(" ", strip=True)
-        if text and len(text.split()) >= 15:
-            return html.unescape(text)
-
-    plain = html.unescape(soup.get_text(" ", strip=True))
-    return plain[:600]
-
-
 def sanitize_html(raw_html: str) -> str:
-    """Sanitizes HTML content, stripping out disallowed tags and all tag attributes."""
+    """Sanitizes HTML content, stripping out disallowed tags and all attributes."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup.find_all(True):
         if tag.name not in ALLOWED_TAGS:
@@ -90,16 +76,14 @@ def sanitize_html(raw_html: str) -> str:
     return "".join(str(c) for c in soup.contents).strip()
 
 
-def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
+def verify_and_clean_output(data: RewriteDraft) -> dict:
     """Sanitizes headlines, normalizes Unicode glyphs, and cleans HTML body."""
     cleaned_titles = []
     seen = set()
 
     for t in data.titles:
-        # Normalize Unicode to fix fragmented Malayalam vowel signs
         t_norm = unicodedata.normalize("NFC", t)
         clean_t = re.sub(r"<[^>]*>", "", t_norm).strip()
-        # Strip only list prefixes (e.g., '1. ', '2) ', '• ') without touching numbers/years
         clean_t = re.sub(r"^(?:[0-9]{1,2}[.)\]]\s*|[#*\-•]\s*)", "", clean_t).strip()
 
         if not clean_t or clean_t in seen:
@@ -116,12 +100,116 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
     return {
         "titles": cleaned_titles,
         "content": sanitized_content,
-        "extracted_facts": data.extracted_facts,
     }
 
 
-def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
-    """Fast, single-roundtrip rewrite with explicit socket timeout."""
+# ==========================================
+# 3. Critic & Refine Engine
+# ==========================================
+
+def execute_critic_pipeline(client, source_title: str, source_text: str, article_id: int) -> dict:
+    """Executes Write -> Audit Critic -> Polish only if needed."""
+
+    # -------------------------------------------------------------
+    # PASS 1: Natural Initial Rewrite (Lean, Generic Prompt)
+    # -------------------------------------------------------------
+    writer_prompt = (
+        "You are an experienced Malayalam news desk copy-editor. "
+        "Rewrite the following source article into a fresh, publication-ready news dispatch in authentic Malayalam newspaper prose (പത്രശൈലി).\n\n"
+        "CORE EDITORIAL RULES:\n"
+        "1. Natural Narrative Flow: Structure the story into clean, readable HTML paragraphs (<p>). Do not mirror the source text sentence-by-sentence, and never use bulleted lists.\n"
+        "2. Factual Integrity: Use ONLY the verified facts from the source text. Never invent external details, speculation, or background context not present in the wire.\n"
+        "3. Tone: Maintain a strictly neutral, objective news wire tone.\n"
+        "4. Headlines: Produce exactly 4 distinct, engaging Malayalam headlines in 'titles' that capture the primary news angle.\n\n"
+        f"Source Title: {source_title}\n\n"
+        f"Source Content:\n{source_text}"
+    )
+
+    logger.info(f"Article {article_id}: Generating initial draft...")
+    resp_draft = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=writer_prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.2,
+            max_output_tokens=4000,
+            response_mime_type="application/json",
+            response_schema=RewriteDraft,
+        ),
+    )
+    draft: RewriteDraft = resp_draft.parsed if resp_draft.parsed else RewriteDraft(**json.loads(resp_draft.text))
+
+    # -------------------------------------------------------------
+    # PASS 2: Adversarial Critic Prompt (Universal Quality Audit)
+    # -------------------------------------------------------------
+    critic_prompt = (
+        "You are a strict, adversarial Malayalam newsroom fact-checker and senior sub-editor. "
+        "Your sole task is to compare the ORIGINAL SOURCE against the DRAFT REWRITE and identify any flaws.\n\n"
+        "UNIVERSAL AUDIT CHECKLIST:\n"
+        "1. Entity & Proper Noun Fidelity: Were any proper names, designations, organizational titles, or locations altered, misspelled, or given unmentioned prefixes/suffixes?\n"
+        "2. Balance & Nuance: Did the draft drop any important qualifying clauses, concessions, caveats, or balancing counter-perspectives present in the original?\n"
+        "3. Source Attribution: If the source explicitly cites a specifically named news publication, agency report, or official document, did the draft preserve the exact name instead of diluting it to vague generic phrasing?\n"
+        "4. Objectivity & Legal Neutrality: Did the draft inject subjective editorializing commentary, metanarrative filler, dramatic intensifiers, or escalate the procedural/legal status of any individual or entity?\n"
+        "5. Headline Precision: Do the headlines retain the specific classification, metrics, or core subject of the event rather than becoming vague or misleading?\n"
+        "6. Temporal Accuracy: Does the draft accurately preserve the event's timeline and status (e.g., ongoing, scheduled, or concluded) without shifting tenses?\n\n"
+        "If the draft contains ANY of these flaws, set has_faults=true and describe the exact necessary corrections under specific_faults.\n"
+        "If the draft is completely faithful, balanced, and publication-ready, set has_faults=false.\n\n"
+        f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
+        f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
+        f"--- DRAFT CONTENT ---\n{draft.content}"
+    )
+
+    logger.info(f"Article {article_id}: Running Critic evaluation...")
+    resp_critic = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=critic_prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.0,
+            max_output_tokens=2000,
+            response_mime_type="application/json",
+            response_schema=CritiqueReport,
+        ),
+    )
+    critic: CritiqueReport = resp_critic.parsed if resp_critic.parsed else CritiqueReport(**json.loads(resp_critic.text))
+
+    # -------------------------------------------------------------
+    # PASS 3: Refine & Polish (Triggered ONLY if faults were found)
+    # -------------------------------------------------------------
+    if critic.has_faults and critic.specific_faults:
+        logger.info(f"Article {article_id}: Critic flagged faults ({critic.specific_faults}). Polishing final version...")
+
+        polish_prompt = (
+            "You are the Chief Editor at the Malayalam news desk. "
+            "Produce the final, publication-ready news report and 4 headlines by strictly resolving every flaw flagged by the copy-editor.\n\n"
+            f"Flaws Identified by the Copy-Editor to Fix:\n"
+            f"{chr(10).join('- ' + f for f in critic.specific_faults)}\n\n"
+            f"Original Source Content:\n{source_text}\n\n"
+            f"Initial Draft for Reference:\n{draft.content}\n\n"
+            "Requirements:\n"
+            "- Correct every flagged item with 100% precision.\n"
+            "- Maintain clean, flowing Malayalam newspaper prose (പത്രശൈലി) in HTML paragraphs (<p>).\n"
+            "- Do not introduce any new unsupported claims."
+        )
+
+        resp_polish = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=polish_prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=4000,
+                response_mime_type="application/json",
+                response_schema=RewriteDraft,
+            ),
+        )
+        final_draft: RewriteDraft = resp_polish.parsed if resp_polish.parsed else RewriteDraft(**json.loads(resp_polish.text))
+    else:
+        logger.info(f"Article {article_id}: Critic passed draft cleanly. Finalizing.")
+        final_draft = draft
+
+    return verify_and_clean_output(final_draft)
+
+
+def call_gemini_with_failover(source_title: str, source_text: str, article_id: int) -> dict:
+    """Executes the pipeline with multi-key failover."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -129,56 +217,15 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            # Explicit 120s transport timeout avoids socket drops
             client = genai.Client(
                 api_key=api_key,
-                http_options=types.HttpOptions(
-                    client_args={"timeout": 120.0}
-                )
+                http_options=types.HttpOptions(client_args={"timeout": 120.0})
             )
 
-            config = types.GenerateContentConfig(
-                temperature=0.2,  # 0.2 provides creative phrasing without factual drift
-                max_output_tokens=6000,
-                response_mime_type="application/json",
-                response_schema=VerifiedRewriteResponse,
-            )
-
-            logger.info(f"Article {article_id}: Executing rewrite with {GEMINI_MODEL} using {key_name}...")
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt_payload,
-                config=config,
-            )
-
-            candidate = response.candidates[0] if response.candidates else None
-            if not candidate:
-                raise ValueError("Empty response received from Gemini.")
-
-            finish_reason = str(getattr(candidate, "finish_reason", ""))
-
-            if "SAFETY" in finish_reason:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Article was flagged by Gemini safety filters. Manual editing is required.",
-                )
-
-            if "MAX_TOKENS" in finish_reason:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Article exceeded maximum token limit. Source text is too long.",
-                )
-
-            if response.parsed:
-                rewrite_obj = response.parsed
-            else:
-                rewrite_obj = VerifiedRewriteResponse(**json.loads(response.text))
-
-            cleaned_result = verify_and_clean_output(rewrite_obj)
-            cleaned_result["key_used"] = f"{key_name} ({GEMINI_MODEL})"
-
-            logger.info(f"✅ Successfully completed rewrite for article {article_id} using {key_name}")
-            return cleaned_result
+            result = execute_critic_pipeline(client, source_title, source_text, article_id)
+            result["key_used"] = f"{key_name} ({GEMINI_MODEL})"
+            logger.info(f"✅ Successfully finished rewrite for article {article_id} using {key_name}")
+            return result
 
         except HTTPException:
             raise
@@ -190,7 +237,7 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
             if "timed out" in err_msg or "timeout" in err_msg:
                 raise HTTPException(
                     status_code=504,
-                    detail="Gemini API read timed out. Google took too long to generate the article. Please try again.",
+                    detail="Gemini API timed out during generation. Please try again.",
                 )
 
             if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
@@ -199,7 +246,6 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
                     detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
                 )
 
-            # Quota exhausted: try next key
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
@@ -216,6 +262,10 @@ def call_gemini_with_failover(prompt_payload: str, article_id: int) -> dict:
         detail=f"All Gemini API keys failed during pipeline. Last error: {last_error}",
     )
 
+
+# ==========================================
+# 4. FastAPI Endpoint
+# ==========================================
 
 @router.post("/admin/rewrite/{article_id}")
 def rewrite_article(article_id: int, admin=Depends(verify_admin)):
@@ -244,39 +294,13 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
         db.close()
 
     try:
-        lead_paragraph = extract_first_paragraph(raw_content)
         cleaned_content = clean_html_noise(raw_content)
 
-        prompt_payload = (
-            "You are a Senior Chief Copy-Editor at a prestigious Malayalam newspaper desk. "
-            "Your objective is to produce a completely original, publication-grade Malayalam news dispatch "
-            "based strictly and exclusively on the verified facts of the provided source text.\n\n"
-            "TWO-STAGE COMPOSITION PROCESS:\n"
-            "STAGE 1: FACTUAL INVENTORY ('extracted_facts')\n"
-            "- Core Fact Extraction: Extract the specific subject/event classification, named entities, proper nouns, numerical figures, percentages, dates, times, and direct official quotes.\n"
-            "- Named Media & Investigative Sources: If the text cites a specifically named news publication, investigative outlet, or agency report, record its exact name. Never dilute specific named outlets into a vague generic term like 'മാധ്യമ റിപ്പോർട്ട്'.\n"
-            "- Qualifications, Concessions & Nuances: Record any qualifying clauses, caveats, partial admissions, or concessions made by speakers (e.g. phrases acknowledging that certain conditions were met elsewhere). Never drop qualifying clauses as doing so alters the speaker's intent.\n"
-            "- Strict Proper Noun Rule: Verify every proper noun character-by-character. Do NOT alter, abbreviate, or add suffixes to real-world names.\n"
-            "- Closed-World Rule: Extract ONLY facts present in the text. Never infer or introduce outside facts.\n\n"
-            "STAGE 2: ORIGINAL NEWS COMPOSITION ('content')\n"
-            "- Tone & Diction: Write strictly in NEUTRAL, OBJECTIVE wire reporting prose (പത്രശൈലി). Never insert subjective editorializing commentary (e.g. phrases meaning 'it is noteworthy' or 'it is significant'), metanarrative filler, or dramatic intensifiers (e.g. 'crucial', 'historic', 'unprecedented') unless directly quoted.\n"
-            "- Legal & Procedural Precision: Retain exact neutral procedural terms. Do not escalate, assume, or change status (e.g. do not label someone an 'accused/പ്രതി' if the source merely reports an arrest, inquiry, or allegation).\n"
-            "- Scope & Attribution Boundaries: When policies, orders, or allegations specify particular cities, entities, or conditions, do NOT merge or bleed those parameters into separate actions. Keep distinct official warnings and general assessments attributed accurately.\n"
-            "- Preserve Source Credits & Balancing Caveats: Explicitly retain the exact names of credited publications. Seamlessly preserve all qualifying caveats and concessions so the balanced context is not distorted.\n"
-            "- Typographical & Orthographic Rigor: Ensure all Malayalam verb conjugations, compound words, and sub-word spellings are 100% grammatically correct.\n"
-            "- Headline Specificity: The 4 headlines in 'titles' MUST retain the specific classification, metrics, or subject of the event instead of reducing it to a vague label.\n"
-            "- Composition: Put the source text's sentences away. Using ONLY the raw facts in 'extracted_facts', compose a fresh, authoritative news report from scratch in flowing HTML paragraphs (<p>). Do not mirror sentences 1-to-1, and never use bulleted lists.\n"
-            "- Numeric Invariance: Preserve all counts, numbers, and percentages with 100% precision.\n\n"
-            "OUTPUT SPECIFICATIONS:\n"
-            "- Set audit_passed to true.\n"
-            "- Output 4 distinct, highly specific Malayalam headlines in 'titles'.\n"
-            "- Output rewritten body in 'content' using safe HTML: <p>, <b>, <i>, <blockquote>.\n\n"
-            f"Original Title: {raw_title}\n\n"
-            f"Lead News: {lead_paragraph}\n\n"
-            f"Full Source Content:\n{cleaned_content}"
+        result = call_gemini_with_failover(
+            source_title=raw_title,
+            source_text=cleaned_content,
+            article_id=article_id
         )
-
-        result = call_gemini_with_failover(prompt_payload, article_id)
 
         return {
             "success": True,
