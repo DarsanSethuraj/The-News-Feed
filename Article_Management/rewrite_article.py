@@ -35,11 +35,8 @@ _in_flight_articles = set()
 ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquote"}
 
 
-# Fast schema: Boolean audit flag eliminates slow token generation
+# Schema for structured output
 class VerifiedRewriteResponse(BaseModel):
-    audit_passed: bool = Field(
-        description="True confirming all facts/numbers match source and zero external names or speculative claims are added.",
-    )
     titles: List[str] = Field(
         min_length=4,
         max_length=4,
@@ -66,7 +63,7 @@ def extract_first_paragraph(raw_html: str) -> str:
 
 
 def sanitize_html(raw_html: str) -> str:
-    """Sanitizes HTML content, stripping out disallowed tags and all tag attributes."""
+    """Sanitizes generated HTML output, stripping out disallowed tags and all tag attributes."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
     for tag in soup.find_all(True):
         if tag.name not in ALLOWED_TAGS:
@@ -102,7 +99,7 @@ def verify_and_clean_output(data: VerifiedRewriteResponse) -> dict:
 
 
 def call_gemini_with_failover(user_input: str, instructions: str, article_id: int) -> dict:
-    """Fast, reliable single-roundtrip rewrite."""
+    """Fast, reliable single-roundtrip rewrite with explicit 120s socket timeout."""
     if not GEMINI_KEYS:
         raise HTTPException(status_code=500, detail="No Gemini API keys configured.")
 
@@ -110,10 +107,12 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
 
     for key_name, api_key in GEMINI_KEYS:
         try:
-            # Pass timeout via dict to ensure it reaches Google's HTTP client
+            # Set explicit 120s timeout on underlying transport
             client = genai.Client(
                 api_key=api_key,
-                http_options={"timeout": 120000}
+                http_options=types.HttpOptions(
+                    client_args={"timeout": 120.0}
+                )
             )
 
             config = types.GenerateContentConfig(
@@ -125,7 +124,7 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
                 response_schema=VerifiedRewriteResponse,
             )
 
-            logger.info(f"Article {article_id}: Executing fast verified rewrite using {key_name}...")
+            logger.info(f"Article {article_id}: Executing verified rewrite using {key_name}...")
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
                 contents=user_input,
@@ -168,11 +167,11 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
             err_msg = str(e).lower()
             logger.warning(f"Gemini {key_name} failed on article {article_id}: {e}")
 
-            # Stop cycling keys on read timeouts
+            # Do NOT loop through other keys on timeouts; fail fast with clear explanation
             if "timed out" in err_msg or "timeout" in err_msg:
                 raise HTTPException(
                     status_code=504,
-                    detail="Gemini API timed out generating the article. Please try again.",
+                    detail="Gemini API read timed out. Google took too long to generate the article. Please try again.",
                 )
 
             if "503" in err_msg or "unavailable" in err_msg or "high demand" in err_msg:
@@ -181,6 +180,7 @@ def call_gemini_with_failover(user_input: str, instructions: str, article_id: in
                     detail="Google Gemini is currently experiencing high demand. Please try again in 1–2 minutes.",
                 )
 
+            # Only rotate to next key if it's a true quota exhaustion (429)
             if "429" in err_msg or "resource_exhausted" in err_msg or "quota" in err_msg:
                 continue
 
@@ -239,7 +239,6 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "3. Closed-World Constraint: Treat the source as the only facts that exist. Never invent background history, "
             "press Q&A context ('in response to questions'), or boilerplate clichés.\n\n"
             "HEADLINES & REWRITE:\n"
-            "- Set audit_passed to true.\n"
             "- Generate exactly 4 distinct, compelling Malayalam headlines in 'titles' based on the lead paragraph.\n"
             "- In 'content', synthesize and restructure the article into fresh journalistic Malayalam prose (പത്രശൈലി) without mirroring sentence order.\n"
             "- Format exclusively in HTML: <p>, <b>, <i>, <ul>, <li>, <blockquote>."
