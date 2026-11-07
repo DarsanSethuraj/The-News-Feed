@@ -37,17 +37,10 @@ ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquo
 
 
 class VerifiedRewriteResponse(BaseModel):
-    audit_passed: bool = Field(
-        description="True confirming all facts and numbers match source text with zero outside additions.",
-    )
-    titles: List[str] = Field(
-        min_length=4,
-        max_length=4,
-        description="Exactly 4 distinct Malayalam headlines based on the lead news facts",
-    )
-    content: str = Field(
-        description="Rewritten Malayalam news article formatted in safe HTML using <p>, <b>, <i>, <ul>, <li>",
-    )
+    audit_passed: bool = Field(description="True confirming all facts/numbers match source text.")
+    extracted_facts: List[str] = Field(description="Brief list of core factual points (who, what, names, numbers) extracted from the source.")
+    titles: List[str] = Field(min_length=4, max_length=4, description="4 distinct Malayalam headlines.")
+    content: str = Field(description="Completely fresh Malayalam news body written using ONLY the extracted facts, without borrowing source sentences.")
 
 
 def clean_html_noise(raw_html: str) -> str:
@@ -226,32 +219,17 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
 
         # Unified concise prompt (identical structure to the successful standalone test)
         prompt_payload = (
-            "You are a Senior Chief Copy-Editor at a leading Malayalam daily news organization. "
-            "Your objective is to produce an entirely original, publication-grade Malayalam news report "
-            "based strictly and exclusively on the provided source text.\n\n"
-            "MANDATORY STRUCTURAL RE-SYNTHESIS (STOP VERBATIM COPYING):\n"
-            "1. NO CHRONOLOGICAL MIRRORING: Under no circumstances should you reproduce the source text sentence-by-sentence. "
-            "Do not merely swap synonyms or append reporting tags (such as 'വ്യക്തമാക്കി' or 'ചോദിച്ചു') to existing sentences.\n"
-            "2. THEMATIC GROUPING ARCHITECTURE: Restructure the narrative into logical news themes rather than the source's order:\n"
-            "   - Lead Overview: Synthesize the primary development, central incident, or overarching claim into an active opening.\n"
-            "   - Core Evidence & Data: Consolidate all metrics, figures, statistics, specific allegations, and concrete dates into a dedicated, cohesive section.\n"
-            "   - Procedural Context & Perspectives: Group background history, procedural findings, official statements, and counter-arguments together.\n"
-            "   - Resolution / Forward Status: Conclude with the current status, pending investigations, demands, or scheduled next steps.\n"
-            "3. AUTHENTIC JOURNALISTIC PROSE: Write natural, publication-grade Malayalam newspaper prose (പത്രശൈലി). "
-            "Combine fragmented sentences into clean, authoritative narrative paragraphs.\n"
-            "4. NO ARTIFICIAL FORMATTING: Deliver the body strictly in flowing narrative paragraphs (<p>). Do not convert spoken statements into bullet lists.\n\n"
-            "STRICT FACTUAL FIDELITY (ZERO HALLUCINATIONS):\n"
-            "1. CLOSED-WORLD RULE: Treat the provided text as the sole universe of truth. Never invent outside history, "
-            "unmentioned individuals, speculative causes, motives, or boilerplate filler not directly asserted in the text.\n"
-            "2. ZERO INFERENCE: Use only the exact designations, titles, organizations, and names present in the text.\n"
-            "3. NUMERIC INVARIANCE: Every number, metric, percentage, date, and statistic must remain 100% exact. "
-            "Never convert exact figures into approximations (e.g., do not add 'ഏകദേശം' / 'അധികം' unless explicitly present in the source).\n\n"
-            "OUTPUT SPECIFICATIONS:\n"
-            "- Set audit_passed to true.\n"
-            "- Generate exactly 4 distinct, compelling Malayalam headlines in 'titles' derived from the lead facts.\n"
-            "- Return the article body in 'content' formatted strictly in clean HTML: <p>, <b>, <i>, <blockquote>.\n\n"
+            "You are a Senior Chief Copy-Editor at a prestigious Malayalam newspaper desk. "
+            "Your task is to take the facts from the source text and write a BRAND NEW, publication-grade news report.\n\n"
+            "TWO-STEP WRITING PROCESS:\n"
+            "1. INVENTORY ('extracted_facts'): Extract the raw factual points, names, designations, and numbers into brief bullets.\n"
+            "2. FRESH COMPOSITION ('content'): Now, put the original sentences away. Using ONLY the raw facts you extracted, "
+            "compose an entirely original Malayalam news report from scratch in authentic newspaper diction (പത്രശൈലി).\n\n"
+            "ABSOLUTE PROHIBITIONS:\n"
+            "- DO NOT copy source sentences or merely swap out occasional words.\n"
+            "- DO NOT invent any facts, numbers, or names not in the extracted list.\n"
+            "- DO NOT use bullet points in the 'content' field. Write strictly in rich, narrative news paragraphs (<p>).\n\n"
             f"Original Title: {raw_title}\n\n"
-            f"Lead News: {lead_paragraph}\n\n"
             f"Full Source Content:\n{cleaned_content}"
         )
 
