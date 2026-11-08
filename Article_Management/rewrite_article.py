@@ -44,7 +44,7 @@ class RewriteDraft(BaseModel):
     titles: List[str] = Field(
         min_length=4, 
         max_length=4, 
-        description="4 distinct, engaging Malayalam headlines capturing both the core action/justification and key conflict/context."
+        description="4 distinct, engaging Malayalam headlines capturing the core action and context with precise prepositions."
     )
     content: str = Field(
         description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement from the source with exact semantic fidelity."
@@ -53,7 +53,7 @@ class RewriteDraft(BaseModel):
 
 class CritiqueReport(BaseModel):
     has_faults: bool = Field(
-        description="True if ANY factual omission, polarity shift, directional distortion, outside addition, or verbatim copying exists."
+        description="True if ANY dateline absorption, verbal escalation, headline ambiguity, factual omission, or verbatim copying exists."
     )
     specific_faults: List[str] = Field(
         default_factory=list,
@@ -126,18 +126,20 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
         "derived strictly and exclusively from the provided source text.\n\n"
         "MANDATORY EDITORIAL INVARIANTS:\n"
-        "1. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
+        "1. DATELINE PRESERVATION: If the source begins with a location dateline, keep it strictly as an isolated prefix at the start of the first paragraph. "
+        "Never absorb or grammatically integrate the dateline into the opening sentence.\n"
+        "2. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
         "and present the narrative in fresh syntax. Write in clean HTML paragraphs (<p>). Never use bulleted lists.\n"
-        "2. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and degree of certainty of every source claim:\n"
-        "   - Negative boundaries must remain negative boundaries (do not convert a negative boundary such as 'will not undermine X' into a positive affirmative pledge such as 'will strictly enforce X').\n"
-        "   - Do not attach unstated operational scopes or sub-domains not present in the wire.\n"
-        "   - Preserve directional and functional terms with 100% precision (do not invert an increase into a decrease, an extension into a reduction, or a defense into passive consent).\n"
-        "3. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Every concrete data point in the source—including all proper nouns, individual names, organizations, "
-        "counts, metrics, calendar years, dates, timeframes, and specific points of friction or justification—must be preserved.\n"
-        "4. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
+        "3. INTENSITY & VERBAL INVARIANCE: Match the exact intensity and nature of reporting verbs and claims. Do not append unstated intensifiers or adverbs. "
+        "Do not change the fundamental nature of an action or statement into a different category of action, and do not add unstated action verbs.\n"
+        "4. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and certainty of every statement. "
+        "Negative boundaries must remain negative boundaries without being converted into affirmative promises. Do not attach unstated operational sub-domains.\n"
+        "5. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
+        "counts, measurements, dates, timeframes, and specific points of friction, context, or justification.\n"
+        "6. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
         "Never add unmentioned personal titles, affiliations, background history, subjective adjectives, or speculative forecasts.\n"
-        "5. DUAL-HOOK HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must pair the primary action/justification with "
-        "the core conflict, impact, or specific context, avoiding bland, passive, single-topic summaries.\n\n"
+        "7. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must accurately capture the primary news angle, core action, and specific context "
+        "with precise grammatical prepositions and accurate time-tense.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
     )
@@ -161,14 +163,13 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     critic_prompt = (
         "You are an adversarial newsroom fact-checker and senior copy-editor.\n"
         "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for these universal flaws:\n\n"
-        "1. POLARITY, SCOPE & DIRECTIONAL SHIFTS:\n"
-        "   - Did the draft convert a negative boundary statement into an affirmative promise?\n"
-        "   - Did it attach unstated operational sub-domains or qualifiers absent from the source?\n"
-        "   - Did it invert or distort any directional or functional term (e.g. confusing an extension with a reduction, or defense with passive agreement)?\n"
-        "2. FACTUAL OMISSIONS: Did the draft drop or summarize away ANY named individual, entity, metric, figure, calendar year, timeframe, or specific point of justification/criticism?\n"
-        "3. EXTRANEOUS INJECTIONS: Did the draft add unmentioned personal titles, external affiliations, unstated evaluative adjectives, or speculative forecasts?\n"
-        "4. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax?\n"
-        "5. HEADLINE IMPACT: Are the headlines overly generic or missing the primary friction/justification?\n\n"
+        "1. DATELINE INTEGRITY: Did the draft absorb a location dateline into the grammar of the opening sentence instead of keeping it as an isolated prefix?\n"
+        "2. VERBAL INFLATION & INTENSITY: Did the draft add unstated adverbs, alter the nature or certainty of statements, or add unstated paired actions?\n"
+        "3. POLARITY & SCOPE SHIFTS: Did the draft convert negative boundaries into affirmative promises, or attach unstated operational scopes?\n"
+        "4. FACTUAL OMISSIONS: Did the draft drop or summarize away ANY named individual, entity, metric, figure, timeframe, or specific point of context/justification?\n"
+        "5. EXTRANEOUS INJECTIONS: Did the draft add unmentioned personal titles, external affiliations, unstated evaluative adjectives, or outside facts?\n"
+        "6. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax?\n"
+        "7. HEADLINE ACCURACY: Are the headlines overly generic, ambiguous, or misrepresenting the central news hook?\n\n"
         "DECISION RULE:\n"
         "- If ANY of these flaws exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
         "- If the draft is freshly phrased, semantically congruent, completely faithful, and contains zero outside additions, set has_faults=false.\n\n"
@@ -204,10 +205,12 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
             f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
             f"Draft for Reference:\n{draft.content}\n\n"
             "Resolution Rules:\n"
+            "- Ensure the dateline remains strictly an isolated prefix and is not absorbed into the sentence grammar.\n"
+            "- Remove all inflated adverbs, restore exact reporting verbs, and eliminate unstated paired actions.\n"
             "- Correct all polarity or scope distortions back to the exact source meaning.\n"
-            "- Restore any omitted entities, names, figures, years, or arguments flagged by the auditor.\n"
-            "- Remove all unmentioned outside facts, titles, or subjective adjectives flagged by the auditor.\n"
-            "- Ensure headlines capture both the primary action and key context/conflict.\n"
+            "- Restore any omitted entities, figures, timeframes, or contextual arguments.\n"
+            "- Remove all unmentioned outside facts, titles, or subjective adjectives.\n"
+            "- Ensure headlines are unambiguous and accurately represent the central news hook.\n"
             "- Write in clean, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
         )
 
