@@ -46,7 +46,7 @@ class RewriteDraft(BaseModel):
 
 
 class CritiqueReport(BaseModel):
-    has_faults: bool = Field(description="True if ANY copied sentences, omitted numbers/names, unnatural vocabulary, or spelling errors exist.")
+    has_faults: bool = Field(description="True if ANY copied text, lexical escalation, omitted data, or unnatural language exists.")
     specific_faults: List[str] = Field(
         default_factory=list,
         description="Actionable points of what needs fixing in the draft."
@@ -111,21 +111,24 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     """Executes Write -> Audit Critic -> Polish only if needed."""
 
     # -------------------------------------------------------------
-    # PASS 1: Natural Initial Rewrite (Generic Guidelines)
+    # PASS 1: Natural Initial Rewrite (Calibrated Synthesis)
     # -------------------------------------------------------------
     writer_prompt = (
         "You are an experienced Malayalam news desk copy-editor. "
         "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
         "based strictly on the facts of the provided text.\n\n"
-        "EDITORIAL GUIDELINES:\n"
+        "EDITORIAL & CALIBRATION GUIDELINES:\n"
         "1. STRUCTURAL RE-SYNTHESIS: Do not copy the source sentence-by-sentence. Combine related thoughts, restructure clause order, "
         "and improve the narrative flow into 3-4 clean HTML paragraphs (<p>). Do not use bulleted lists.\n"
-        "2. PRESERVE ALL DATA & SPECIFIC FIGURES: While sentence structures must change, concrete facts must NEVER be omitted. "
-        "Retain all numbers, counts, measurements, metrics, dates, and named entities/sources with 100% precision.\n"
-        "3. STANDARD JOURNALISTIC VOCABULARY: Use natural, standard Malayalam words. Never invent artificial words, "
-        "unnatural compound terms, or archaic phrasing. Ensure standard orthography and accurate spelling.\n"
-        "4. ZERO OUTSIDE INJECTIONS: Do NOT add any unmentioned personal titles, political party designations, or background history.\n"
-        "5. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles' capturing the core news angle.\n\n"
+        "2. SEMANTIC INTENSITY INVARIANCE (NO LEXICAL ESCALATION): Match the source's exact degree of certainty, intensity, and tone. "
+        "Do not inflate moderate claims into radical overhauls, do not convert conditional effects into absolute certainties, "
+        "and do not turn stated intentions into unconditional guarantees. Preserve the specific nature of all actions without weakening or over-generalizing them.\n"
+        "3. PROCEDURAL & STATUTORY EXACTNESS: Preserve exact administrative, legal, technical, and regulatory distinctions. "
+        "Do not blur primary statutory provisions with secondary administrative guidelines.\n"
+        "4. METRIC & ENTITY FIDELITY: Retain all numbers, measurements, metrics, statistics, years, dates, and named entities/sources with 100% precision.\n"
+        "5. STANDARD JOURNALISTIC VOCABULARY: Use natural, standard Malayalam words. Never invent artificial words, unmentioned titles, or external affiliations.\n"
+        "6. HEADLINE IMPACT & ANGLE: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. "
+        "If the news involves a defense, rebuttal, policy justification, or controversy, ensure the headlines reflect that core news hook rather than a passive, one-sided summary.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
     )
@@ -144,18 +147,21 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     draft: RewriteDraft = resp_draft.parsed if resp_draft.parsed else RewriteDraft(**json.loads(resp_draft.text))
 
     # -------------------------------------------------------------
-    # PASS 2: Adversarial Critic Prompt (Generic Inspector)
+    # PASS 2: Adversarial Critic Prompt (Universal Factual Audit)
     # -------------------------------------------------------------
     critic_prompt = (
         "You are a strict, adversarial Malayalam newsroom fact-checker and senior sub-editor. "
         "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and identify any flaws.\n\n"
         "AUDIT CHECKLIST:\n"
         "1. SENTENCE MIRRORING: Did the draft copy entire sentences word-for-word from the source? If so, flag it for structural rephrasing.\n"
-        "2. OMITTED DATA OR NAMES: Did the draft omit any specific numbers, counts, metrics, dates, or named sources/officials present in the source? "
-        "If any concrete figures or names are missing, explicitly list them to be restored.\n"
-        "3. VOCABULARY & SPELLING: Are there any unnatural or artificial words, archaic compounds, or spelling mistakes in the headlines or body? "
-        "Flag them with their standard Malayalam corrections.\n"
-        "4. OUTSIDE ADDITIONS: Did the draft add unmentioned personal titles, affiliations, or external facts not present in the wire?\n\n"
+        "2. LEXICAL ESCALATION & TONE DRIFT: Did the draft artificially inflate the intensity, certainty, or severity of any statement "
+        "(e.g., turning moderate developments into radical shifts, or turning qualified effects into absolute guarantees)? "
+        "Did it dilute specific actions into vague generalities? Flag any escalated phrases to be restored to their source-faithful meaning.\n"
+        "3. PROCEDURAL PRECISION: Are technical, legal, statutory, or regulatory terms preserved with their exact procedural distinction?\n"
+        "4. OMITTED DATA OR SOURCES: Did the draft omit any specific numbers, metrics, years, dates, named sources, or balancing counter-perspectives? Flag them to be restored.\n"
+        "5. VOCABULARY & SPELLING: Are there any unnatural/invented words, archaic compounds, or spelling mistakes in headlines or body?\n"
+        "6. HEADLINE BALANCE: Did the headlines omit the core justification, conflict, or central event angle in favor of a vague PR summary?\n"
+        "7. OUTSIDE INJECTIONS: Did the draft add unmentioned personal titles, affiliations, or external facts not in the wire?\n\n"
         "If the draft contains ANY of these flaws, set has_faults=true and list exact actionable fixes in specific_faults.\n"
         "If the draft is freshly phrased, completely faithful, and publication-ready, set has_faults=false.\n\n"
         f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
@@ -190,7 +196,7 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
             f"Original Source Content:\n{source_text}\n\n"
             f"Initial Draft for Reference:\n{draft.content}\n\n"
             "Requirements:\n"
-            "- Correct every flagged item: restore any omitted numbers/sources, fix any unnatural vocabulary or spelling, and ensure sentences are not verbatim copies.\n"
+            "- Correct every flagged item: calibrate exaggerated language back to the source's exact intensity, restore any omitted data or balancing caveats, fix vocabulary/spelling, and ensure sentences are not verbatim copies.\n"
             "- Write in clean, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
         )
 
