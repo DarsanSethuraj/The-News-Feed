@@ -41,26 +41,23 @@ ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquo
 # ==========================================
 
 class RewriteDraft(BaseModel):
-    extracted_facts: List[str] = Field(
-        description="Comprehensive list of all raw facts, specific entities, proper nouns, figures, years, metrics, and core statements found in the source text."
-    )
     titles: List[str] = Field(
         min_length=4, 
         max_length=4, 
-        description="4 distinct, engaging Malayalam headlines derived strictly from the extracted facts."
+        description="4 distinct, engaging Malayalam headlines capturing the core news angle accurately."
     )
     content: str = Field(
-        description="Rewritten Malayalam news article in HTML paragraphs (<p>) composed using ONLY the extracted facts."
+        description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement and detail from the source text."
     )
 
 
 class CritiqueReport(BaseModel):
     has_faults: bool = Field(
-        description="True if ANY outside information was added, any source fact was dropped, or any verbatim copying occurred."
+        description="True if ANY factual statement was dropped, outside information was added, or verbatim copying occurred."
     )
     specific_faults: List[str] = Field(
         default_factory=list,
-        description="Specific actionable points of what needs fixing."
+        description="Actionable points of what needs fixing."
     )
 
 
@@ -115,32 +112,36 @@ def verify_and_clean_output(data: RewriteDraft) -> dict:
 
 
 # ==========================================
-# 3. Generic Extract-Rewrite-Audit Engine
+# 3. Generic Pipeline Engine
 # ==========================================
 
 def execute_critic_pipeline(client, source_title: str, source_text: str, article_id: int) -> dict:
-    """Executes Extract & Rewrite -> Audit -> Polish."""
+    """Executes Write -> Audit Critic -> Polish only if needed."""
 
     # -------------------------------------------------------------
-    # STAGE 1: Extract and Rewrite (100% Generic & Hermetic)
+    # STAGE 1: Universal Synthesis Prompt
     # -------------------------------------------------------------
     writer_prompt = (
-        "You are an expert Malayalam news desk editor.\n\n"
-        "TASK:\n"
-        "1. EXTRACT: Under 'extracted_facts', extract a complete, granular inventory of every factual item in the source: "
-        "all named entities, specific individuals, numbers, counts, years, dates, statutory terms, and specific claims.\n"
-        "2. REWRITE: Under 'content', put the source sentences away and write a fresh, authoritative Malayalam news report in standard newspaper prose (ലളിതമായ പത്രശൈലി) "
-        "using ONLY the items you extracted in 'extracted_facts'.\n\n"
-        "STRICT BOUNDARIES:\n"
-        "- NO OUTSIDE FACTS: The source text is the entire universe. Do NOT bring in any external real-world memory, background history, unmentioned titles, or speculative claims.\n"
-        "- NO OMISSIONS: Do not summarize away or omit any of the extracted facts, figures, years, or named individuals.\n"
-        "- NO VERBATIM COPYING: Re-architect the sentence structure and flow into clean HTML paragraphs (<p>). Do not mirror source sentences 1-to-1, and do not use bullet lists.\n"
-        "- HEADLINES: Provide 4 distinct, engaging Malayalam headlines in 'titles' capturing the central news hook accurately.\n\n"
+        "You are an experienced Malayalam news desk copy-editor. "
+        "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
+        "based strictly on the facts of the provided text.\n\n"
+        "EDITORIAL GUIDELINES:\n"
+        "1. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Every single fact, named entity, number, date, measurement, "
+        "argument, and official quote present in the source MUST be accounted for and rephrased. "
+        "Do not summarize away, condense, or omit any detail from the text.\n"
+        "2. STRUCTURAL RE-SYNTHESIS: Do not copy the source sentence-by-sentence. Combine related thoughts, restructure clause order, "
+        "and improve the narrative flow into 3-4 clean HTML paragraphs (<p>). Do not use bulleted lists.\n"
+        "3. CLOSED-WORLD RULE (ZERO OUTSIDE FACTS): The source text is the entire universe of truth. "
+        "Never introduce external real-world memory, unmentioned personal titles, background history, or speculative details.\n"
+        "4. TONE & INTENSITY INVARIANCE: Match the exact measured tone and degree of certainty of the source. "
+        "Do not inject subjective evaluative adjectives, do not inflate moderate statements into radical extremes, "
+        "and do not weaken firm decisions into mere goals.\n"
+        "5. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles' capturing the core news angle and context accurately.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
     )
 
-    logger.info(f"Article {article_id}: Generating extract & rewrite draft...")
+    logger.info(f"Article {article_id}: Generating draft...")
     resp_draft = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=writer_prompt,
@@ -154,16 +155,19 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     draft: RewriteDraft = resp_draft.parsed if resp_draft.parsed else RewriteDraft(**json.loads(resp_draft.text))
 
     # -------------------------------------------------------------
-    # STAGE 2: Adversarial Audit (Universal Fidelity Check)
+    # STAGE 2: Universal Adversarial Critic Prompt
     # -------------------------------------------------------------
     critic_prompt = (
         "You are a strict, adversarial fact-checking auditor.\n"
-        "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and check for two things:\n"
-        "1. OUTSIDE INFORMATION: Did the draft add ANY fact, personal designation, external background, or claim not in the source text? If yes, flag it to be removed.\n"
-        "2. OMISSIONS: Did the draft drop ANY specific named individual, number, year, metric, or concrete claim present in the source text? If yes, flag it to be restored.\n"
-        "3. VERBATIM COPYING: Did the draft copy entire sentences word-for-word from the source? If yes, flag it to be rephrased.\n\n"
-        "If ANY of these faults exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
-        "If the draft contains strictly zero outside facts, zero omissions, and is freshly written, set has_faults=false.\n\n"
+        "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for:\n\n"
+        "1. OMISSIONS: Did the draft skip, drop, or summarize away ANY factual statement, named entity, number, date, "
+        "or specific argument present in the source text? If ANY detail is missing, explicitly flag it to be restored.\n"
+        "2. OUTSIDE INJECTIONS: Did the draft add ANY unmentioned fact, external title/affiliation, or unstated subjective adjective? "
+        "If yes, flag it to be removed.\n"
+        "3. TONE & INTENSITY: Did the draft artificially inflate the intensity of moderate claims, or weaken firm actions? If yes, flag it.\n"
+        "4. VERBATIM COPYING: Did the draft copy entire sentences word-for-word from the source? If yes, flag it to be rephrased.\n\n"
+        "If ANY of these flaws exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
+        "If the draft contains all source facts with zero omissions, zero outside facts, and is freshly written, set has_faults=false.\n\n"
         f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
         f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
         f"--- DRAFT CONTENT ---\n{draft.content}"
@@ -186,19 +190,19 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     # STAGE 3: Final Polish (Runs ONLY if flaws were found)
     # -------------------------------------------------------------
     if critic.has_faults and critic.specific_faults:
-        logger.info(f"Article {article_id}: Auditor flagged issues ({critic.specific_faults}). Polishing final version...")
+        logger.info(f"Article {article_id}: Auditor flagged flaws ({critic.specific_faults}). Polishing final version...")
 
         polish_prompt = (
             "You are the Chief Editor at the Malayalam news desk. "
-            "Produce the final publication-ready version by fixing the specific items flagged by the auditor:\n\n"
+            "Produce the final publication-ready version by fixing every item flagged by the auditor:\n\n"
             f"Auditor Flags:\n"
             f"{chr(10).join('- ' + f for f in critic.specific_faults)}\n\n"
             f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
             f"Draft for Reference:\n{draft.content}\n\n"
             "Requirements:\n"
-            "- Remove any outside fact flagged by the auditor.\n"
-            "- Restore any omitted names, numbers, years, or facts flagged by the auditor.\n"
-            "- Keep standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
+            "- Restore every omitted fact, number, date, or named entity flagged by the auditor.\n"
+            "- Remove any unstated outside information or subjective adjectives flagged by the auditor.\n"
+            "- Write in clean, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
         )
 
         resp_polish = client.models.generate_content(
