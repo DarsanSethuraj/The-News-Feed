@@ -37,7 +37,7 @@ ALLOWED_TAGS = {"p", "br", "b", "i", "strong", "em", "ul", "ol", "li", "blockquo
 
 
 # ==========================================
-# 1. Pydantic Schemas for Hermetic Critic Flow
+# 1. Pydantic Schemas for Containment Flow
 # ==========================================
 
 class RewriteDraft(BaseModel):
@@ -46,10 +46,10 @@ class RewriteDraft(BaseModel):
 
 
 class CritiqueReport(BaseModel):
-    has_faults: bool = Field(description="True if ANY outside information, factual corruption, or major omission exists.")
+    has_faults: bool = Field(description="True if ANY outside information, unsupported claim, or factual distortion exists.")
     specific_faults: List[str] = Field(
         default_factory=list,
-        description="Clear, actionable points of what needs fixing, especially unmentioned outside information."
+        description="Clear list of specific ungrounded details or errors that must be removed/corrected."
     )
 
 
@@ -104,27 +104,28 @@ def verify_and_clean_output(data: RewriteDraft) -> dict:
 
 
 # ==========================================
-# 3. Hermetic Critic & Refine Engine
+# 3. Containment Critic & Refine Engine
 # ==========================================
 
 def execute_critic_pipeline(client, source_title: str, source_text: str, article_id: int) -> dict:
-    """Executes Hermetic Write -> Leakage Audit -> Polish."""
+    """Executes Hermetic Write -> Factual Containment Audit -> Polish."""
 
     # -------------------------------------------------------------
-    # PASS 1: Hermetic Draft (Zero Outside Memory)
+    # PASS 1: Strict Hermetic Re-Synthesis
     # -------------------------------------------------------------
     writer_prompt = (
-        "You are an isolated text processing and restructuring engine. "
-        "Your task is to rewrite the provided news article into fresh, original Malayalam prose (പത്രശൈലി) "
-        "using ONLY the provided text.\n\n"
-        "ABSOLUTE HERMETIC ISOLATION (ZERO OUTSIDE MEMORY):\n"
-        "1. COMPLETE AMNESIA: You possess ZERO external memory of the real world. You do not know who any person is, "
-        "what any organization does, or what past events took place beyond what is explicitly typed in the source text.\n"
-        "2. ZERO OUTSIDE INJECTIONS: Do NOT add any title, description, history, relationship, party affiliation, "
-        "or biographical context not written in the source, even if you recognize the name.\n"
-        "3. PURE TEXT RE-SYNTHESIS: Reorganize and rewrite the provided facts from scratch into natural, readable HTML paragraphs (<p>). "
-        "Do not mirror sentences 1-to-1, and never use bulleted lists.\n"
-        "4. Output exactly 4 distinct Malayalam headlines in 'titles' using only facts from the text.\n\n"
+        "You are an isolated text restructuring engine. "
+        "Your sole task is to rewrite the provided source text into fresh, publication-grade Malayalam news prose (പത്രശൈലി) "
+        "using EXCLUSIVELY the facts, entities, and statements present in the source text.\n\n"
+        "STRICT CLOSED-WORLD CONSTRAINT:\n"
+        "1. COMPLETE TEXTUAL CONTAINMENT: The provided text is the entire universe of truth. "
+        "You possess ZERO external knowledge of real-world history, people, organizations, science, or events. "
+        "Every entity, relationship, context, number, or statement in your output must be directly supported by the provided text.\n"
+        "2. ZERO EXTRAPOLATION: Never add any fact, descriptor, context, cause, motive, or background detail that is not explicitly stated, "
+        "even if it is universally true in the real world.\n"
+        "3. RESTRUCTURE FROM SCRATCH: Compose fresh narrative prose without copying the source sentence-by-sentence. "
+        "Organize the facts into clean, flowing HTML paragraphs (<p>). Do not use bulleted lists.\n"
+        "4. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles' grounded strictly in the provided text.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
     )
@@ -143,27 +144,28 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     draft: RewriteDraft = resp_draft.parsed if resp_draft.parsed else RewriteDraft(**json.loads(resp_draft.text))
 
     # -------------------------------------------------------------
-    # PASS 2: Adversarial Leakage & Fidelity Auditor
+    # PASS 2: Universal Factual Entailment Audit
     # -------------------------------------------------------------
     critic_prompt = (
         "You are a strict, adversarial fact-checking auditor. "
-        "Your sole task is to check if the DRAFT REWRITE accessed ANY outside knowledge not present in the SOURCE TEXT.\n\n"
-        "AUDIT CHECKLIST:\n"
-        "1. KNOWLEDGE LEAKAGE CHECK: Did the draft introduce ANY outside information, title, designation, party name, "
-        "biographical detail, or background context that was NOT explicitly stated in the source text? "
-        "(For example, if the source text said a person's name and the draft added an unmentioned political or professional title, this is an OUTSIDE INFORMATION VIOLATION).\n"
-        "2. Factual Distortion: Are any numbers, statistics, dates, or proper nouns altered or misspelled?\n"
-        "3. Omission of Nuance: Did the draft drop any important qualifying clauses, caveats, or balanced perspectives?\n"
-        "4. Tone: Did the draft add subjective commentary (e.g. 'എന്നത് ശ്രദ്ധേയമാണ്') or dramatic intensifiers?\n\n"
-        "If ANY outside information or discrepancy was introduced, set has_faults=true and explicitly state: "
-        "'Remove unmentioned outside detail: [detail]' under specific_faults.\n"
-        "If the draft contains strictly zero outside information and is faithful, set has_faults=false.\n\n"
+        "Your task is to conduct a strict factual entailment check: verify whether EVERY single claim, entity, "
+        "number, context, and descriptor in the REWRITTEN DRAFT is strictly derived from the SOURCE TEXT.\n\n"
+        "AUDIT CRITERIA:\n"
+        "1. Extraneous Information Check: Does the draft contain ANY word, entity, descriptor, historical context, "
+        "or factual claim that cannot be directly found in the source text? "
+        "(If any detail in the draft relies on outside real-world knowledge rather than the source text, mark it as an EXTRANEOUS INFORMATION VIOLATION).\n"
+        "2. Factual & Numeric Precision: Were any numbers, dates, statistics, or proper nouns altered, approximated, or misspelled?\n"
+        "3. Omission of Balance: Did the draft drop any important qualifying clauses, caveats, or balancing perspectives?\n"
+        "4. Tone: Did the draft add subjective commentary, metanarrative filler, or unquoted dramatic intensifiers?\n\n"
+        "If the draft contains ANY extraneous information, unsupported claims, or factual discrepancies, "
+        "set has_faults=true and list the exact ungrounded details under specific_faults: 'Remove unsupported detail: [detail]'.\n"
+        "If every single claim in the draft is 100% supported by the source text, set has_faults=false.\n\n"
         f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
         f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
         f"--- DRAFT CONTENT ---\n{draft.content}"
     )
 
-    logger.info(f"Article {article_id}: Running Leakage Audit...")
+    logger.info(f"Article {article_id}: Running Factual Entailment Audit...")
     resp_critic = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=critic_prompt,
@@ -177,22 +179,22 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     critic: CritiqueReport = resp_critic.parsed if resp_critic.parsed else CritiqueReport(**json.loads(resp_critic.text))
 
     # -------------------------------------------------------------
-    # PASS 3: Refine & Polish (Strips any leaked memory)
+    # PASS 3: Refine & Polish (Strips any external data)
     # -------------------------------------------------------------
     if critic.has_faults and critic.specific_faults:
-        logger.info(f"Article {article_id}: Critic detected leakage/faults ({critic.specific_faults}). Polishing...")
+        logger.info(f"Article {article_id}: Auditor detected extraneous data/faults ({critic.specific_faults}). Polishing...")
 
         polish_prompt = (
             "You are a strict news copy-editor. "
-            "Produce the final publication-ready version by eliminating every piece of outside information or flaw flagged by the auditor.\n\n"
+            "Produce the final publication-ready version by eliminating every piece of extraneous information or flaw flagged by the auditor.\n\n"
             f"Flaws Flagged by Auditor:\n"
             f"{chr(10).join('- ' + f for f in critic.specific_faults)}\n\n"
             f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
             f"Initial Draft for Reference:\n{draft.content}\n\n"
             "Requirements:\n"
-            "- Remove any outside fact, unmentioned title, or biographical detail flagged by the auditor.\n"
-            "- Ensure 100% of the content is derived exclusively from the source text.\n"
-            "- Write in clean, flowing Malayalam HTML paragraphs (<p>, <b>, <i>)."
+            "- Strictly purge every extraneous detail, ungrounded descriptor, or outside fact flagged by the auditor.\n"
+            "- Ensure 100% of the information is derived solely and directly from the source text.\n"
+            "- Maintain clean, flowing Malayalam newspaper prose (പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
         )
 
         resp_polish = client.models.generate_content(
@@ -207,7 +209,7 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         )
         final_draft: RewriteDraft = resp_polish.parsed if resp_polish.parsed else RewriteDraft(**json.loads(resp_polish.text))
     else:
-        logger.info(f"Article {article_id}: Zero leakage detected. Finalizing.")
+        logger.info(f"Article {article_id}: Zero extraneous information detected. Finalizing.")
         final_draft = draft
 
     return verify_and_clean_output(final_draft)
