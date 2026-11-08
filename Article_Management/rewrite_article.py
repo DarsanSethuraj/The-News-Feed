@@ -44,16 +44,16 @@ class RewriteDraft(BaseModel):
     titles: List[str] = Field(
         min_length=4, 
         max_length=4, 
-        description="4 distinct, engaging Malayalam headlines capturing the core news angle accurately."
+        description="4 distinct, engaging Malayalam headlines capturing both the core action/justification and key conflict/context."
     )
     content: str = Field(
-        description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement and detail from the source text."
+        description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement from the source with exact semantic fidelity."
     )
 
 
 class CritiqueReport(BaseModel):
     has_faults: bool = Field(
-        description="True if ANY factual statement was dropped, outside information was added, or verbatim copying occurred."
+        description="True if ANY factual omission, polarity shift, directional distortion, outside addition, or verbatim copying exists."
     )
     specific_faults: List[str] = Field(
         default_factory=list,
@@ -112,27 +112,32 @@ def verify_and_clean_output(data: RewriteDraft) -> dict:
 
 
 # ==========================================
-# 3. Generic Pipeline Engine
+# 3. Universal Critic & Refine Engine
 # ==========================================
 
 def execute_critic_pipeline(client, source_title: str, source_text: str, article_id: int) -> dict:
     """Executes Write -> Audit Critic -> Polish only if needed."""
 
     # -------------------------------------------------------------
-    # STAGE 1: Universal Synthesis Prompt
+    # PASS 1: Generic Calibrated Synthesis
     # -------------------------------------------------------------
     writer_prompt = (
-        "You are an experienced Malayalam news desk copy-editor.\n"
-        "Your task is to produce a fresh, publication-ready news dispatch in authentic Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
-        "based strictly on the facts of the provided text.\n\n"
-        "TRANSFORMATION INSTRUCTIONS:\n"
-        "1. RESTRUCTURE EVERY SENTENCE: You are strictly forbidden from copying original sentences word-for-word. "
-        "Combine short clauses, shift active/passive voice, and write in fresh, original Malayalam syntax. "
-        "The opening sentence of the article MUST be constructed with a fresh grammatical structure.\n"
-        "2. PRESERVE ALL FACTS & DATA: Retain all names, quotes, arguments, numbers, years, and specific concessions without omission. "
-        "Change the sentence structure, NOT the facts.\n"
-        "3. TONE & VOCABULARY: Maintain standard, neutral news wire tone. Do not invent outside background history, unmentioned titles, or speculative claims.\n"
-        "4. HEADLINES: Output 4 distinct, engaging Malayalam headlines in 'titles' capturing the central news hook and context.\n\n"
+        "You are an expert news desk copy-editor.\n"
+        "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
+        "derived strictly and exclusively from the provided source text.\n\n"
+        "MANDATORY EDITORIAL INVARIANTS:\n"
+        "1. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
+        "and present the narrative in fresh syntax. Write in clean HTML paragraphs (<p>). Never use bulleted lists.\n"
+        "2. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and degree of certainty of every source claim:\n"
+        "   - Negative boundaries must remain negative boundaries (do not convert a negative boundary such as 'will not undermine X' into a positive affirmative pledge such as 'will strictly enforce X').\n"
+        "   - Do not attach unstated operational scopes or sub-domains not present in the wire.\n"
+        "   - Preserve directional and functional terms with 100% precision (do not invert an increase into a decrease, an extension into a reduction, or a defense into passive consent).\n"
+        "3. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Every concrete data point in the source—including all proper nouns, individual names, organizations, "
+        "counts, metrics, calendar years, dates, timeframes, and specific points of friction or justification—must be preserved.\n"
+        "4. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
+        "Never add unmentioned personal titles, affiliations, background history, subjective adjectives, or speculative forecasts.\n"
+        "5. DUAL-HOOK HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must pair the primary action/justification with "
+        "the core conflict, impact, or specific context, avoiding bland, passive, single-topic summaries.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
     )
@@ -151,28 +156,22 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     draft: RewriteDraft = resp_draft.parsed if resp_draft.parsed else RewriteDraft(**json.loads(resp_draft.text))
 
     # -------------------------------------------------------------
-    # STAGE 2: Universal Adversarial Critic Prompt
+    # PASS 2: Universal Adversarial Critic Prompt
     # -------------------------------------------------------------
     critic_prompt = (
-        "You are an adversarial newsroom fact-checker and senior sub-editor.\n"
-        "Your task is to compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for four objective flaws:\n\n"
-        "1. VERBATIM COPYING (SYNTAX CHECK):\n"
-        "   - Did the draft copy entire original sentences or paragraphs word-for-word instead of rephrasing?\n"
-        "   - If the draft merely duplicated source sentences without restructuring the clause order or syntax, "
-        "set has_faults=true and flag: 'The draft contains verbatim copied sentences. Re-architect the sentence structure into fresh Malayalam news prose.'\n\n"
-        "2. UNFOUNDED ADDITIONS (OUTSIDE INFORMATION):\n"
-        "   - Did the draft introduce ANY fact, background history, unmentioned personal title, or external claim not in the source text?\n"
-        "   - Did it inject unstated subjective/evaluative adjectives (e.g. adding 'welcome/comforting' or 'radical')?\n"
-        "   - If yes, set has_faults=true and flag: 'Remove unmentioned outside detail or subjective adjective: [specify detail]'.\n\n"
-        "3. FACTUAL OMISSIONS (DATA & CONCESSIONS):\n"
-        "   - Did the draft drop any named individuals, specific numbers, calendar years, timeframes, or explicit policy concessions present in the source?\n"
-        "   - If any concrete fact or name was lost during rewriting, set has_faults=true and flag: 'Restore omitted source fact: [specify fact]'.\n\n"
-        "4. TONE & COMMITMENT:\n"
-        "   - Did the draft weaken an executive decision into a mere aim, or exaggerate a measured statement?\n"
-        "   - Are all 4 headlines specific, engaging, and reflective of the core news hook?\n\n"
-        "DECISION:\n"
+        "You are an adversarial newsroom fact-checker and senior copy-editor.\n"
+        "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for these universal flaws:\n\n"
+        "1. POLARITY, SCOPE & DIRECTIONAL SHIFTS:\n"
+        "   - Did the draft convert a negative boundary statement into an affirmative promise?\n"
+        "   - Did it attach unstated operational sub-domains or qualifiers absent from the source?\n"
+        "   - Did it invert or distort any directional or functional term (e.g. confusing an extension with a reduction, or defense with passive agreement)?\n"
+        "2. FACTUAL OMISSIONS: Did the draft drop or summarize away ANY named individual, entity, metric, figure, calendar year, timeframe, or specific point of justification/criticism?\n"
+        "3. EXTRANEOUS INJECTIONS: Did the draft add unmentioned personal titles, external affiliations, unstated evaluative adjectives, or speculative forecasts?\n"
+        "4. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax?\n"
+        "5. HEADLINE IMPACT: Are the headlines overly generic or missing the primary friction/justification?\n\n"
+        "DECISION RULE:\n"
         "- If ANY of these flaws exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
-        "- If the draft is freshly restructured in original syntax, 100% faithful to the facts, and free of outside information, set has_faults=false.\n\n"
+        "- If the draft is freshly phrased, semantically congruent, completely faithful, and contains zero outside additions, set has_faults=false.\n\n"
         f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
         f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
         f"--- DRAFT CONTENT ---\n{draft.content}"
@@ -192,21 +191,23 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     critic: CritiqueReport = resp_critic.parsed if resp_critic.parsed else CritiqueReport(**json.loads(resp_critic.text))
 
     # -------------------------------------------------------------
-    # STAGE 3: Final Polish (Runs ONLY if flaws were found)
+    # PASS 3: Universal Polish Prompt
     # -------------------------------------------------------------
     if critic.has_faults and critic.specific_faults:
         logger.info(f"Article {article_id}: Auditor flagged flaws ({critic.specific_faults}). Polishing final version...")
 
         polish_prompt = (
-            "You are the Chief Editor at the Malayalam news desk. "
-            "Produce the final publication-ready version by fixing every item flagged by the auditor:\n\n"
+            "You are the Chief Editor at the Malayalam news desk.\n"
+            "Produce the final publication-ready version by resolving every item flagged by the auditor:\n\n"
             f"Auditor Flags:\n"
             f"{chr(10).join('- ' + f for f in critic.specific_faults)}\n\n"
             f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
             f"Draft for Reference:\n{draft.content}\n\n"
-            "Requirements:\n"
-            "- Restore every omitted fact, number, date, or named entity flagged by the auditor.\n"
-            "- Remove any unstated outside information or subjective adjectives flagged by the auditor.\n"
+            "Resolution Rules:\n"
+            "- Correct all polarity or scope distortions back to the exact source meaning.\n"
+            "- Restore any omitted entities, names, figures, years, or arguments flagged by the auditor.\n"
+            "- Remove all unmentioned outside facts, titles, or subjective adjectives flagged by the auditor.\n"
+            "- Ensure headlines capture both the primary action and key context/conflict.\n"
             "- Write in clean, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
         )
 
