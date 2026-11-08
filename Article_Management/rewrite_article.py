@@ -47,13 +47,13 @@ class RewriteDraft(BaseModel):
         description="4 distinct, engaging Malayalam headlines capturing the core action and context with precise prepositions."
     )
     content: str = Field(
-        description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement from the source with exact semantic fidelity."
+        description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement from the source with exact semantic and numeric fidelity."
     )
 
 
 class CritiqueReport(BaseModel):
     has_faults: bool = Field(
-        description="True if ANY dateline absorption, verbal escalation, headline ambiguity, factual omission, or verbatim copying exists."
+        description="True if ANY numeric alteration, digit-to-word conversion, dateline absorption, verbal escalation, headline ambiguity, factual omission, or verbatim copying exists."
     )
     specific_faults: List[str] = Field(
         default_factory=list,
@@ -130,15 +130,17 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         "Never absorb or grammatically integrate the dateline into the opening sentence.\n"
         "2. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
         "and present the narrative in fresh syntax. Write in clean HTML paragraphs (<p>). Never use bulleted lists.\n"
-        "3. INTENSITY & VERBAL INVARIANCE: Match the exact intensity and nature of reporting verbs and claims. Do not append unstated intensifiers or adverbs. "
+        "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision. "
+        "Keep all numerical figures strictly in standard Arabic digits; never convert digits into spelled-out Malayalam words.\n"
+        "4. INTENSITY & VERBAL INVARIANCE: Match the exact intensity and nature of reporting verbs and claims. Do not append unstated intensifiers or adverbs. "
         "Do not change the fundamental nature of an action or statement into a different category of action, and do not add unstated action verbs.\n"
-        "4. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and certainty of every statement. "
+        "5. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and certainty of every statement. "
         "Negative boundaries must remain negative boundaries without being converted into affirmative promises. Do not attach unstated operational sub-domains.\n"
-        "5. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
-        "counts, measurements, dates, timeframes, and specific points of friction, context, or justification.\n"
-        "6. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
+        "6. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
+        "lists of participants, counts, measurements, dates, timeframes, and specific points of friction, context, or justification.\n"
+        "7. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
         "Never add unmentioned personal titles, affiliations, background history, subjective adjectives, or speculative forecasts.\n"
-        "7. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must accurately capture the primary news angle, core action, and specific context "
+        "8. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must accurately capture the primary news angle, core action, and specific context "
         "with precise grammatical prepositions and accurate time-tense.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
@@ -163,13 +165,14 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     critic_prompt = (
         "You are an adversarial newsroom fact-checker and senior copy-editor.\n"
         "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for these universal flaws:\n\n"
-        "1. DATELINE INTEGRITY: Did the draft absorb a location dateline into the grammar of the opening sentence instead of keeping it as an isolated prefix?\n"
-        "2. VERBAL INFLATION & INTENSITY: Did the draft add unstated adverbs, alter the nature or certainty of statements, or add unstated paired actions?\n"
-        "3. POLARITY & SCOPE SHIFTS: Did the draft convert negative boundaries into affirmative promises, or attach unstated operational scopes?\n"
-        "4. FACTUAL OMISSIONS: Did the draft drop or summarize away ANY named individual, entity, metric, figure, timeframe, or specific point of context/justification?\n"
-        "5. EXTRANEOUS INJECTIONS: Did the draft add unmentioned personal titles, external affiliations, unstated evaluative adjectives, or outside facts?\n"
-        "6. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax?\n"
-        "7. HEADLINE ACCURACY: Are the headlines overly generic, ambiguous, or misrepresenting the central news hook?\n\n"
+        "1. NUMERIC CORRUPTION OR WORD CONVERSION: Did the draft alter any number, calendar year, date, or count, or convert Arabic digits into spelled-out Malayalam words?\n"
+        "2. DATELINE INTEGRITY: Did the draft absorb a location dateline into the grammar of the opening sentence instead of keeping it as an isolated prefix?\n"
+        "3. VERBAL INFLATION & INTENSITY: Did the draft add unstated adverbs, alter the nature or certainty of statements, or add unstated paired actions?\n"
+        "4. POLARITY & SCOPE SHIFTS: Did the draft convert negative boundaries into affirmative promises, or attach unstated operational scopes?\n"
+        "5. FACTUAL OMISSIONS: Did the draft drop or summarize away ANY named individual, entity, metric, figure, timeframe, or specific point of context/justification?\n"
+        "6. EXTRANEOUS INJECTIONS: Did the draft add unmentioned personal titles, external affiliations, unstated evaluative adjectives, or outside facts?\n"
+        "7. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax?\n"
+        "8. HEADLINE ACCURACY: Are the headlines overly generic, ambiguous, or misrepresenting the central news hook?\n\n"
         "DECISION RULE:\n"
         "- If ANY of these flaws exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
         "- If the draft is freshly phrased, semantically congruent, completely faithful, and contains zero outside additions, set has_faults=false.\n\n"
@@ -205,6 +208,7 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
             f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
             f"Draft for Reference:\n{draft.content}\n\n"
             "Resolution Rules:\n"
+            "- Restore all numbers, calendar years, dates, and counts strictly in Arabic digits matching the source with 100% precision.\n"
             "- Ensure the dateline remains strictly an isolated prefix and is not absorbed into the sentence grammar.\n"
             "- Remove all inflated adverbs, restore exact reporting verbs, and eliminate unstated paired actions.\n"
             "- Correct all polarity or scope distortions back to the exact source meaning.\n"
