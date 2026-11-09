@@ -127,15 +127,16 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         "derived strictly and exclusively from the provided source text.\n\n"
         "MANDATORY EDITORIAL INVARIANTS:\n"
         # Fix for Problem 4: Explicit Malayalam dateline format
-        "1. DATELINE PRESERVATION: If the source begins with a location dateline (e.g., New Delhi, Thiruvananthapuram, Kochi), "
-        "keep it strictly as an isolated bold prefix in Malayalam at the start of the first paragraph (e.g., '<b>ന്യൂഡൽഹി:</b> ' or '<b>തിരുവനന്തപുരം:</b> '). "
-        "Never absorb or grammatically integrate the dateline into the opening sentence.\n"
-        "2. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
-        "and present the narrative in fresh syntax. Write in clean HTML paragraphs (<p>). Never use bulleted lists.\n"
-        "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision. "
-        "Keep all numerical figures strictly in standard Arabic digits; never convert digits into spelled-out Malayalam words.\n"
-        "4. INTENSITY & VERBAL INVARIANCE: Match the exact intensity and nature of reporting verbs and claims. Do not append unstated intensifiers or adverbs. "
-        "Do not change the fundamental nature of an action or statement into a different category of action, and do not add unstated action verbs.\n"
+        # 1. Generic Dateline Rule (No hardcoded place names)
+        "1. DATELINE PRESERVATION: If the source begins with a location dateline, render it strictly as an isolated bold prefix in Malayalam at the start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never grammatically integrate the location into the opening sentence.\n"
+
+        # 2. Generic Syntactic & Paragraph Synthesis Rule
+        "2. COMPLETE JOURNALISTIC REWRITING: Do not reproduce original sentences or paragraph structures verbatim. Synthesize and articulate all source details using fresh, natural Malayalam newspaper prose (ലളിതമായ പത്രശൈലി). Combine related details into cohesive, well-paced paragraphs (<p>). Every sentence must be freshly composed in active voice.\n"
+
+        # 3. Numeric & Factual Invariance (Unchanged)
+        "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision. Keep all numerical figures strictly in standard Arabic digits; never convert digits into spelled-out Malayalam words.\n"
+
+        "4. NATURAL JOURNALISTIC FLOW: Express statements, claims, and reported developments smoothly and concisely in natural news desk style. Do not use mechanical word-for-word translation or stack repetitive sentence-ending conjunctions.\n"
         "5. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and certainty of every statement. "
         "Negative boundaries must remain negative boundaries without being converted into affirmative promises. Do not attach unstated operational sub-domains.\n"
         "6. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
