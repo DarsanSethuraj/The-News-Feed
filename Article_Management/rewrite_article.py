@@ -126,7 +126,9 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
         "derived strictly and exclusively from the provided source text.\n\n"
         "MANDATORY EDITORIAL INVARIANTS:\n"
-        "1. DATELINE PRESERVATION: If the source begins with a location dateline, keep it strictly as an isolated prefix at the start of the first paragraph. "
+        # Fix for Problem 4: Explicit Malayalam dateline format
+        "1. DATELINE PRESERVATION: If the source begins with a location dateline (e.g., New Delhi, Thiruvananthapuram, Kochi), "
+        "keep it strictly as an isolated bold prefix in Malayalam at the start of the first paragraph (e.g., '<b>ന്യൂഡൽഹി:</b> ' or '<b>തിരുവനന്തപുരം:</b> '). "
         "Never absorb or grammatically integrate the dateline into the opening sentence.\n"
         "2. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
         "and present the narrative in fresh syntax. Write in clean HTML paragraphs (<p>). Never use bulleted lists.\n"
@@ -173,9 +175,11 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         "6. EXTRANEOUS INJECTIONS: Did the draft add unmentioned personal titles, external affiliations, unstated evaluative adjectives, or outside facts?\n"
         "7. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax?\n"
         "8. HEADLINE ACCURACY: Are the headlines overly generic, ambiguous, or misrepresenting the central news hook?\n\n"
+        # Fix for Problem 3: Decision rule targets genuine errors rather than normal phrasing
         "DECISION RULE:\n"
-        "- If ANY of these flaws exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
-        "- If the draft is freshly phrased, semantically congruent, completely faithful, and contains zero outside additions, set has_faults=false.\n\n"
+        "- Set has_faults=true ONLY if there is a real factual inaccuracy, corrupted or converted number/date, critical entity omission, or misleading headline.\n"
+        "- Do NOT flag natural journalistic paraphrasing or smooth Malayalam sentence structure as a fault.\n"
+        "- If the draft is faithful to facts and numbers with clear Malayalam flow, set has_faults=false and leave specific_faults empty.\n\n"
         f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
         f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
         f"--- DRAFT CONTENT ---\n{draft.content}"
@@ -206,15 +210,18 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
             f"Auditor Flags:\n"
             f"{chr(10).join('- ' + f for f in critic.specific_faults)}\n\n"
             f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
-            f"Draft for Reference:\n{draft.content}\n\n"
+            # Fix for Problem 2: Pass draft titles into Polish context
+            f"Draft Headlines for Reference:\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
+            f"Draft Content for Reference:\n{draft.content}\n\n"
             "Resolution Rules:\n"
+            # Fix for Problem 2: Explicit instruction to refine/retain the 4 draft headlines
+            "- Refine or preserve the 4 draft headlines so they remain accurate, punchy, and directly relevant to the news.\n"
             "- Restore all numbers, calendar years, dates, and counts strictly in Arabic digits matching the source with 100% precision.\n"
-            "- Ensure the dateline remains strictly an isolated prefix and is not absorbed into the sentence grammar.\n"
+            "- Ensure the dateline remains strictly an isolated bold prefix in Malayalam (e.g. '<b>ന്യൂഡൽഹി:</b> ') and is not absorbed into the sentence grammar.\n"
             "- Remove all inflated adverbs, restore exact reporting verbs, and eliminate unstated paired actions.\n"
             "- Correct all polarity or scope distortions back to the exact source meaning.\n"
             "- Restore any omitted entities, figures, timeframes, or contextual arguments.\n"
             "- Remove all unmentioned outside facts, titles, or subjective adjectives.\n"
-            "- Ensure headlines are unambiguous and accurately represent the central news hook.\n"
             "- Write in clean, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
         )
 
