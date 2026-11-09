@@ -153,7 +153,7 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         model=GEMINI_MODEL,
         contents=writer_prompt,
         config=types.GenerateContentConfig(
-            temperature=0.2,
+            temperature=0.55,
             max_output_tokens=4000,
             response_mime_type="application/json",
             response_schema=RewriteDraft,
@@ -229,7 +229,7 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
             model=GEMINI_MODEL,
             contents=polish_prompt,
             config=types.GenerateContentConfig(
-                temperature=0.1,
+                temperature=0.3,
                 max_output_tokens=4000,
                 response_mime_type="application/json",
                 response_schema=RewriteDraft,
