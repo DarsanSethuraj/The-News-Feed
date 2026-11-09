@@ -122,29 +122,26 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     # PASS 1: Generic Calibrated Synthesis
     # -------------------------------------------------------------
     writer_prompt = (
-        "You are an expert news desk copy-editor.\n"
-        "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
-        "derived strictly and exclusively from the provided source text.\n\n"
+        "You are a senior news desk rewriter.\n"
+        "Your task is to completely restructure and rewrite the provided news story into fresh, natural Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
+        "while retaining 100% of the facts, claims, events, and statements present in the source.\n\n"
         "MANDATORY EDITORIAL INVARIANTS:\n"
-        # Fix for Problem 4: Explicit Malayalam dateline format
-        # 1. Generic Dateline Rule (No hardcoded place names)
+        # 1. Generic Dateline
         "1. DATELINE PRESERVATION: If the source begins with a location dateline, render it strictly as an isolated bold prefix in Malayalam at the start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never grammatically integrate the location into the opening sentence.\n"
-
-        # 2. Generic Syntactic & Paragraph Synthesis Rule
-        "2. COMPLETE JOURNALISTIC REWRITING: Do not reproduce original sentences or paragraph structures verbatim. Synthesize and articulate all source details using fresh, natural Malayalam newspaper prose (ലളിതമായ പത്രശൈലി). Combine related details into cohesive, well-paced paragraphs (<p>). Every sentence must be freshly composed in active voice.\n"
-
-        # 3. Numeric & Factual Invariance (Unchanged)
-        "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision. Keep all numerical figures strictly in standard Arabic digits; never convert digits into spelled-out Malayalam words.\n"
-
-        "4. NATURAL JOURNALISTIC FLOW: Express statements, claims, and reported developments smoothly and concisely in natural news desk style. Do not use mechanical word-for-word translation or stack repetitive sentence-ending conjunctions.\n"
-        "5. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and certainty of every statement. "
-        "Negative boundaries must remain negative boundaries without being converted into affirmative promises. Do not attach unstated operational sub-domains.\n"
-        "6. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
-        "lists of participants, counts, measurements, dates, timeframes, and specific points of friction, context, or justification.\n"
-        "7. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
-        "Never add unmentioned personal titles, affiliations, background history, subjective adjectives, or speculative forecasts.\n"
-        "8. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must accurately capture the primary news angle, core action, and specific context "
-        "with precise grammatical prepositions and accurate time-tense.\n\n"
+        # 2. Complete Restructuring (No Verbatim Copying)
+        "2. COMPLETE RESTRUCTURING (പൂർണ്ണമായ പുനരാവിഷ്കാരം): Do not copy sentences or clauses verbatim from the source. "
+        "Restructure clause order, combine fragmented statements into cohesive paragraphs (<p>), and articulate every sentence in fresh, active Malayalam news prose. "
+        "Every single fact, quote, claim, and context from the source must be retained in the restructured text.\n"
+        # 3. Numeric Invariance
+        "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision strictly in standard Arabic digits.\n"
+        # 4. Strict Closed-World (NO OUTSIDE KNOWLEDGE / NO FACT-CHECKING)
+        "4. STRICT SOURCE FIDELITY & ZERO EXTERNAL INJECTIONS: You possess zero external memory of the world. "
+        "The source text is your entire universe of truth. Never use external real-world knowledge to 'correct', substitute, replace, or alter any name, title, role, or designation stated in the source. "
+        "Every designation, entity, and event stated in the source must be preserved exactly as presented without outside interference.\n"
+        # 5. Natural Journalistic Flow
+        "5. NATURAL JOURNALISTIC FLOW: Render all statements, claims, and developments smoothly and concisely in natural news desk style without mechanical word-for-word translation or awkward indirect speech chaining.\n"
+        # 6. Headlines
+        "6. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles' capturing the primary news angle with accurate time-tense.\n\n"
         f"Source Title: {source_title}\n\n"
         f"Source Content:\n{source_text}"
     )
