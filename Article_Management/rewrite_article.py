@@ -242,11 +242,11 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "   - Retain exact grammatical scope and plurality: Never broaden singular events, dates, or terms into plural or generalized periods.\n"
             "   - Retain exact agency and attribution: Never alter who announced, confirmed, or stated an action. Do not convert an announcement of an arrest into performing the arrest.\n\n"
 
-            "3. DEEP RESTRUCTURING (NO VERBATIM COPYING & NO PADDING):\n"
+            "3. PROPORTIONAL DEPTH & ZERO ARGUMENT OMISSIONS:\n"
             "   - Never copy sentences verbatim or mirror the source's chronological clause order. Do not reuse 4 or more consecutive words from any source sentence (except for proper nouns and exact numbers).\n"
-            "   - Invert clause orders, lead with the core outcome/development, and synthesize the narrative into 2 to 4 rich, cohesive HTML paragraphs (<p>).\n"
-            "   - Do NOT add padding, speculative filler, or fluff to artificially lengthen the article. Retain all underlying facts concisely without dropping any concrete context or official statement.\n\n"
-
+            "   - Structure the rewrite in cohesive HTML paragraphs (<p>) proportional to the source's depth (e.g. 2 to 3 paragraphs for short incident news; 4 to 6 paragraphs for detailed policy, economic, or multi-point reports).\n"
+            "   - Never omit distinct policy demands, secondary arguments, financial calculations, stakeholder warnings, or long-term proposals merely to shorten the article. Retain 100% of all substantive points in fresh Malayalam prose.\n\n"
+            
             "4. PROPER NOUN & ACTOR COMPLETENESS:\n"
             "   - Every named person, organization, and actor present in the source MUST be explicitly named in the output. Never omit a person's name or reduce them solely to their title.\n\n"
 
