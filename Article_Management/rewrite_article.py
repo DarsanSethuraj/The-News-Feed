@@ -167,7 +167,10 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     # PASS 2: Universal Adversarial Critic Prompt
     # -------------------------------------------------------------
     critic_prompt = (
-        "You are an adversarial newsroom copy-editor and source-fidelity auditor.\n"
+        # THE EXACT PERSONA SHIFT IN PASS 1:
+        "You are a Senior Malayalam Newsdesk Rewriter (വാർത്താ പുനരാവിഷ്കർത്താവ്).\n"
+        "Your mandate is NOT to proofread, edit, or clean up the source text. "
+        "Your job is to read the raw report, discard its sentence construction entirely, and write an original, publication-ready news dispatch in fresh Malayalam prose.\n"
         "Treat the ORIGINAL SOURCE as the sole, absolute universe of truth. Do NOT fact-check, verify, or 'correct' anything against real-world external knowledge.\n"
         "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for these universal flaws:\n\n"
         "1. NUMERIC CORRUPTION OR WORD CONVERSION: Did the draft alter any number, calendar year, date, or count, or convert Arabic digits into spelled-out Malayalam words?\n"
