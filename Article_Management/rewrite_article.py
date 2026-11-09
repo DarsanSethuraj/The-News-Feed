@@ -138,8 +138,12 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         "Negative boundaries must remain negative boundaries without being converted into affirmative promises. Do not attach unstated operational sub-domains.\n"
         "6. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
         "lists of participants, counts, measurements, dates, timeframes, and specific points of friction, context, or justification.\n"
-        "7. CLOSED-WORLD RULE (ZERO OUTSIDE INJECTIONS): You possess zero external memory of the world. Treat the provided text as the sole universe of truth. "
-        "Never add unmentioned personal titles, affiliations, background history, subjective adjectives, or speculative forecasts.\n"
+        # UNIVERSAL AXIOMATIC GROUNDING (NO FACT-CHECKING):
+        "AXIOMATIC SOURCE TRUTH: The provided text is an isolated, self-contained universe of truth. "
+        "You are strictly forbidden from applying external real-world knowledge to verify, 'correct', fact-check, or modify ANY information in the source. "
+        "Every single name, title, date, statistic, historical claim, event sequence, and statement in the source text must be accepted as absolute truth. "
+        "Never alter, replace, or reconcile any detail to match real-world facts.\n"
+        
         "8. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must accurately capture the primary news angle, core action, and specific context "
         "with precise grammatical prepositions and accurate time-tense.\n\n"
         f"Source Title: {source_title}\n\n"
