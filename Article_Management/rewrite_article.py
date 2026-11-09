@@ -129,10 +129,13 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
         # 1. Generic Dateline
         "1. DATELINE PRESERVATION: If the source begins with a location dateline, render it strictly as an isolated bold prefix in Malayalam at the start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never grammatically integrate the location into the opening sentence.\n"
         # 2. Complete Restructuring (No Verbatim Copying)
-        "2. COMPLETE RESTRUCTURING (പൂർണ്ണമായ പുനരാവിഷ്കാരം): Do not copy sentences or clauses verbatim from the source. "
-        "Restructure clause order, combine fragmented statements into cohesive paragraphs (<p>), and articulate every sentence in fresh, active Malayalam news prose. "
-        "Every single fact, quote, claim, and context from the source must be retained in the restructured text.\n"
-        # 3. Numeric Invariance
+        # UNIVERSAL REWRITING DIRECTIVE (Fits all categories):
+        "2. LOGICAL SYNTHESIS OVER LINE-BY-LINE MIRRORING: Do not mirror the source text sentence-by-sentence or retain its exact sequential phrasing. "
+        "Read the entire story and compose a fresh, cohesive news dispatch in 2 to 4 clean HTML paragraphs (<p>) tailored to the story's natural length:\n"
+        "   - Opening: Begin directly with the primary development, central outcome, or key announcement.\n"
+        "   - Body & Context: Group related background details, data points, actions, and statements logically into fresh, active-voice sentences.\n"
+        "Every sentence must be freshly articulated in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
+        "while retaining 100% of the facts, figures, proper names, and statements from the source.\n"        # 3. Numeric Invariance
         "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision strictly in standard Arabic digits.\n"
         # 4. Strict Closed-World (NO OUTSIDE KNOWLEDGE / NO FACT-CHECKING)
         "4. STRICT SOURCE FIDELITY & ZERO EXTERNAL INJECTIONS: You possess zero external memory of the world. "
