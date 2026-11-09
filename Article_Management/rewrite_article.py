@@ -242,10 +242,10 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
             "   - Retain exact grammatical scope and plurality: Never broaden singular events, dates, or terms into plural or generalized periods.\n"
             "   - Retain exact agency and attribution: Never alter who announced, confirmed, or stated an action. Do not convert an announcement of an arrest into performing the arrest.\n\n"
 
-            "3. PROPORTIONAL DEPTH & ZERO ARGUMENT OMISSIONS:\n"
-            "   - Never copy sentences verbatim or mirror the source's chronological clause order. Do not reuse 4 or more consecutive words from any source sentence (except for proper nouns and exact numbers).\n"
-            "   - Structure the rewrite in cohesive HTML paragraphs (<p>) proportional to the source's depth (e.g. 2 to 3 paragraphs for short incident news; 4 to 6 paragraphs for detailed policy, economic, or multi-point reports).\n"
-            "   - Never omit distinct policy demands, secondary arguments, financial calculations, stakeholder warnings, or long-term proposals merely to shorten the article. Retain 100% of all substantive points in fresh Malayalam prose.\n\n"
+            "3. DEEP RESTRUCTURING & PROPORTIONAL COMPLETENESS:\n"
+            "   - Never mirror the source text sentence-by-sentence or copy clauses verbatim. Do not reuse 4 or more consecutive words from any source sentence (excluding proper nouns, entity names, and exact numbers).\n"
+            "   - Restructure syntax, invert clause orders, and vary sentence openings into active, flowing journalistic Malayalam.\n"
+            "   - Format the body into clean HTML paragraphs (<p>) proportional to the length and depth of the source material. Never omit substantive points, secondary context, qualifying conditions, or distinct statements merely to shorten the text.\n\n"
             
             "4. PROPER NOUN & ACTOR COMPLETENESS:\n"
             "   - Every named person, organization, and actor present in the source MUST be explicitly named in the output. Never omit a person's name or reduce them solely to their title.\n\n"
