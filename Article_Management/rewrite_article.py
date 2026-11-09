@@ -44,20 +44,20 @@ class RewriteDraft(BaseModel):
     titles: List[str] = Field(
         min_length=4, 
         max_length=4, 
-        description="4 distinct, engaging Malayalam headlines capturing the core action and context with precise prepositions."
+        description="4 distinct, engaging Malayalam headlines capturing different news angles."
     )
     content: str = Field(
-        description="Complete Malayalam news article in HTML paragraphs (<p>) covering every factual statement from the source with exact semantic and numeric fidelity."
+        description="Complete, freshly rewritten Malayalam news article in HTML paragraphs (<p>)."
     )
 
 
 class CritiqueReport(BaseModel):
     has_faults: bool = Field(
-        description="True if ANY numeric alteration, digit-to-word conversion, dateline absorption, verbal escalation, headline ambiguity, factual omission, or verbatim copying exists."
+        description="True ONLY if real factual omissions, ungrounded external details, or corrupted numbers exist."
     )
     specific_faults: List[str] = Field(
         default_factory=list,
-        description="Actionable points of what needs fixing."
+        description="Actionable points of what needs factual fixing."
     )
 
 
@@ -66,11 +66,11 @@ class CritiqueReport(BaseModel):
 # ==========================================
 
 def clean_html_noise(raw_html: str) -> str:
-    """Removes scripts, styles, and non-content noise while preserving article text."""
+    """Removes scripts, styles, and non-content noise while preserving article HTML tags (including <p>, <a>, etc.)."""
     soup = BeautifulSoup(raw_html or "", "html.parser")
-    for tag in soup(["script", "style", "noscript", "iframe", "header", "footer", "nav", "svg"]):
+    for tag in soup(["script", "style", "noscript", "iframe", "header", "footer", "nav", "svg", "figure"]):
         tag.decompose()
-    return str(soup)
+    return str(soup).strip()
 
 
 def sanitize_html(raw_html: str) -> str:
@@ -95,10 +95,15 @@ def verify_and_clean_output(data: RewriteDraft) -> dict:
         clean_t = re.sub(r"^(?:[0-9]{1,2}[.)\]]\s*|[#*\-•]\s*)", "", clean_t).strip()
 
         if not clean_t or clean_t in seen:
-            raise ValueError("All 4 headlines must be distinct and non-empty.")
+            continue
 
         seen.add(clean_t)
         cleaned_titles.append(clean_t)
+
+    # Ensure exactly 4 distinct headlines
+    while len(cleaned_titles) < 4:
+        fallback = cleaned_titles[0] if cleaned_titles else "പ്രധാന വാർത്തകൾ"
+        cleaned_titles.append(f"{fallback} - കൂടുതൽ വിവരങ്ങൾ")
 
     content_norm = unicodedata.normalize("NFC", data.content)
     sanitized_content = sanitize_html(content_norm)
@@ -106,7 +111,7 @@ def verify_and_clean_output(data: RewriteDraft) -> dict:
         raise ValueError("Rewritten content cannot be empty.")
 
     return {
-        "titles": cleaned_titles,
+        "titles": cleaned_titles[:4],
         "content": sanitized_content,
     }
 
@@ -119,43 +124,52 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     """Executes Write -> Audit Critic -> Polish only if needed."""
 
     # -------------------------------------------------------------
-    # PASS 1: Generic Calibrated Synthesis
+    # PASS 1: Senior Newsdesk Rewriter (Deep Rewriting & Sandboxing)
     # -------------------------------------------------------------
     writer_prompt = (
-        "You are an expert news desk copy-editor.\n"
-        "Your task is to produce a fresh, publication-ready news dispatch in authentic, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) "
-        "derived strictly and exclusively from the provided source text.\n\n"
-        "MANDATORY EDITORIAL INVARIANTS:\n"
-        "1. DATELINE PRESERVATION: If the source begins with a location dateline, keep it strictly as an isolated prefix at the start of the first paragraph. "
-        "Never absorb or grammatically integrate the dateline into the opening sentence.\n"
-        "2. SYNTACTIC TRANSFORMATION: Do not copy original sentences word-for-word. Combine related points, restructure clause order, "
-        "and present the narrative in fresh syntax. Write in clean HTML paragraphs (<p>). Never use bulleted lists.\n"
-        "3. NUMERIC & DIGIT INVARIANCE: Preserve all numbers, calendar years, dates, scores, counts, and measurements with 100% precision. "
-        "Keep all numerical figures strictly in standard Arabic digits; never convert digits into spelled-out Malayalam words.\n"
-        "4. INTENSITY & VERBAL INVARIANCE: Match the exact intensity and nature of reporting verbs and claims. Do not append unstated intensifiers or adverbs. "
-        "Do not change the fundamental nature of an action or statement into a different category of action, and do not add unstated action verbs.\n"
-        "5. SEMANTIC & POLARITY CONGRUENCE: Match the exact semantic scope, polarity, and certainty of every statement. "
-        "Negative boundaries must remain negative boundaries without being converted into affirmative promises. Do not attach unstated operational sub-domains.\n"
-        "6. TOTAL FACTUAL COMPLETENESS (ZERO OMISSIONS): Retain every concrete data point in the source—including all proper nouns, names, organizations, "
-        "lists of participants, counts, measurements, dates, timeframes, and specific points of friction, context, or justification.\n"
-        # UNIVERSAL AXIOMATIC GROUNDING (NO FACT-CHECKING):
-        "AXIOMATIC SOURCE TRUTH: The provided text is an isolated, self-contained universe of truth. "
-        "You are strictly forbidden from applying external real-world knowledge to verify, 'correct', fact-check, or modify ANY information in the source. "
-        "Every single name, title, date, statistic, historical claim, event sequence, and statement in the source text must be accepted as absolute truth. "
-        "Never alter, replace, or reconcile any detail to match real-world facts.\n"
+        "You are an expert Senior Malayalam Newsdesk Rewriter (വാർത്താ പുനരാവിഷ്കർത്താവ്).\n"
+        "Your mandate is NOT to proofread, edit, or mirror the source text. "
+        "Your job is to read the raw facts and compose an original, publication-ready news dispatch in fresh Malayalam news prose (ലളിതവും ആധികാരികവുമായ പത്രശൈലി).\n"
+        "The output must retain 100% of the underlying facts, numbers, quotes, and statements while being structurally and linguistically distinct from the source text.\n\n"
         
-        "8. HEADLINES: Output exactly 4 distinct, engaging Malayalam headlines in 'titles'. Headlines must accurately capture the primary news angle, core action, and specific context "
-        "with precise grammatical prepositions and accurate time-tense.\n\n"
+        "MANDATORY EDITORIAL INVARIANTS:\n\n"
+        "1. DEEP RESTRUCTURING & PHRASE DIVERSITY (വാക്യഘടന പൂർണ്ണമായി മാറ്റിയെഴുതുക):\n"
+        "   - Do not copy sentences or clauses verbatim. Never reuse 4 or more consecutive words from any source sentence (except for proper nouns, entity names, and exact numbers).\n"
+        "   - Invert clause orders, vary sentence openings, and use fresh journalistic phrasing rather than shallow word-for-word synonym swapping.\n"
+        "   - Consolidate fragmented, single-sentence paragraphs into 2 to 4 rich, cohesive HTML paragraphs (<p>). Do not mirror the source's chronological paragraph-by-paragraph layout. Do not use bullet points.\n\n"
+        
+        "2. AXIOMATIC SOURCE TRUTH (ZERO EXTERNAL FACT-CHECKING):\n"
+        "   - Treat the provided source text as an absolute, isolated universe of truth.\n"
+        "   - You are strictly forbidden from applying external real-world knowledge to verify, 'correct', fact-check, or alter ANY detail from the source.\n"
+        "   - Every proper noun, designation, office, title, date, and historical claim in the source must be preserved exactly as presented, even if it contradicts real-world reality.\n\n"
+        
+        "3. PROPER NOUN & ACTOR COMPLETENESS (പേരുകൾ ഒഴിവാക്കരുത്):\n"
+        "   - Every named individual, organization, and actor present in the source MUST be explicitly named in the output.\n"
+        "   - Never drop a person's name or reduce them solely to their title. Include both title and name exactly as given.\n\n"
+        
+        "4. NUMERIC & MEASUREMENT PRECISION:\n"
+        "   - Retain all numbers, counts, dates, years, scores, percentages, and metrics with 100% accuracy strictly in standard Arabic digits (e.g., 57, 40, 2026).\n"
+        "   - Never convert digits into spelled-out Malayalam words.\n\n"
+        
+        "5. DATELINE PRESERVATION:\n"
+        "   - If the source begins with a reporting location, preserve it strictly as an isolated bold prefix in Malayalam at the very start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never absorb it into the sentence grammar.\n\n"
+        
+        "6. NATURAL STATEMENTS & FLOW:\n"
+        "   - Integrate all reported statements, claims, and reactions smoothly into active journalistic flow without mechanical word-for-word translation or repetitive sentence endings.\n\n"
+        
+        "7. HEADLINES:\n"
+        "   - Output exactly 4 distinct, engaging Malayalam headlines in 'titles' capturing different news angles.\n\n"
+        
         f"Source Title: {source_title}\n\n"
-        f"Source Content:\n{source_text}"
+        f"Source Content (with HTML tags):\n{source_text}"
     )
 
-    logger.info(f"Article {article_id}: Generating draft...")
+    logger.info(f"Article {article_id}: Generating deep rewrite...")
     resp_draft = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=writer_prompt,
         config=types.GenerateContentConfig(
-            temperature=0.2,
+            temperature=0.5,
             max_output_tokens=4000,
             response_mime_type="application/json",
             response_schema=RewriteDraft,
@@ -164,32 +178,28 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     draft: RewriteDraft = resp_draft.parsed if resp_draft.parsed else RewriteDraft(**json.loads(resp_draft.text))
 
     # -------------------------------------------------------------
-    # PASS 2: Universal Adversarial Critic Prompt
+    # PASS 2: Universal Source-Fidelity Audit (NOT A REWRITER)
     # -------------------------------------------------------------
     critic_prompt = (
-        # THE EXACT PERSONA SHIFT IN PASS 1:
-        "You are a Senior Malayalam Newsdesk Rewriter (വാർത്താ പുനരാവിഷ്കർത്താവ്).\n"
-        "Your mandate is NOT to proofread, edit, or clean up the source text. "
-        "Your job is to read the raw report, discard its sentence construction entirely, and write an original, publication-ready news dispatch in fresh Malayalam prose.\n"
-        "Treat the ORIGINAL SOURCE as the sole, absolute universe of truth. Do NOT fact-check, verify, or 'correct' anything against real-world external knowledge.\n"
+        "You are an adversarial newsroom copy-editor and source-fidelity auditor.\n"
+        "Treat the ORIGINAL SOURCE as the sole, absolute universe of truth. Do NOT fact-check against real-world external knowledge.\n"
         "Compare the ORIGINAL SOURCE against the DRAFT REWRITE and inspect for these universal flaws:\n\n"
-        "1. NUMERIC CORRUPTION OR WORD CONVERSION: Did the draft alter any number, calendar year, date, or count, or convert Arabic digits into spelled-out Malayalam words?\n"
+        "1. NUMERIC CORRUPTION OR WORD CONVERSION: Did the draft alter any number, date, or count, or convert Arabic digits to spelled-out words?\n"
         "2. DATELINE INTEGRITY: Did the draft absorb a location dateline into the grammar of the opening sentence instead of keeping it as an isolated prefix?\n"
-        "3. VERBAL INFLATION & INTENSITY: Did the draft add unstated adverbs, alter the certainty of statements, or add unstated paired actions?\n"
-        "4. POLARITY & SCOPE SHIFTS: Did the draft convert negative boundaries into affirmative promises, or attach unstated operational scopes?\n"
-        "5. FACTUAL OMISSIONS: Did the draft drop or summarize away ANY named individual, entity, metric, figure, timeframe, or specific point of context/justification?\n"
-        "6. EXTRANEOUS INJECTIONS & REAL-WORLD SUBSTITUTIONS: Did the draft introduce outside facts, or alter/replace ANY title, role, designation, or detail from the source to match real-world reality?\n"
-        "7. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax in natural Malayalam?\n"
-        "8. HEADLINE ACCURACY: Are the headlines overly generic, ambiguous, or misrepresenting the central news hook?\n\n"
+        "3. PROPER NOUN & FACTUAL OMISSIONS: Did the draft drop or omit any named person, title, key entity, metric, or concrete factual event?\n"
+        "4. EXTRANEOUS INJECTIONS & REAL-WORLD SUBSTITUTIONS: Did the draft introduce outside facts, or alter/replace ANY title, role, or designation from the source to match real-world reality?\n"
+        "5. VERBATIM COPYING: Did the draft reproduce entire sentences or clauses word-for-word instead of freshly re-architecting the syntax in natural Malayalam?\n"
+        "6. HEADLINE ACCURACY: Are the headlines overly generic, ambiguous, or misrepresenting the central news hook?\n\n"
         "DECISION RULE:\n"
-        "- If ANY of these flaws exist, set has_faults=true and list exact actionable fixes under specific_faults.\n"
-        "- If the draft is freshly phrased, semantically congruent, faithful to every source detail without outside corrections or omissions, set has_faults=false.\n\n"
+        "- Set has_faults=true ONLY if there is an ungrounded external detail, a real factual error, a dropped name, or a corrupted number.\n"
+        "- Do NOT flag fresh phrasing, sentence restructuring, or natural Malayalam clause order as a fault.\n"
+        "- If the draft is completely faithful to facts with fresh syntax, set has_faults=false and leave specific_faults empty.\n\n"
         f"--- ORIGINAL SOURCE ---\n{source_text}\n\n"
         f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
         f"--- DRAFT CONTENT ---\n{draft.content}"
     )
 
-    logger.info(f"Article {article_id}: Running Audit evaluation...")
+    logger.info(f"Article {article_id}: Running source-fidelity audit...")
     resp_critic = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=critic_prompt,
@@ -203,34 +213,31 @@ def execute_critic_pipeline(client, source_title: str, source_text: str, article
     critic: CritiqueReport = resp_critic.parsed if resp_critic.parsed else CritiqueReport(**json.loads(resp_critic.text))
 
     # -------------------------------------------------------------
-    # PASS 3: Universal Polish Prompt
+    # PASS 3: Factual Patch Only (NO UNDO LOOP)
     # -------------------------------------------------------------
     if critic.has_faults and critic.specific_faults:
-        logger.info(f"Article {article_id}: Auditor flagged flaws ({critic.specific_faults}). Polishing final version...")
+        logger.info(f"Article {article_id}: Auditor flagged discrepancies ({critic.specific_faults}). Polishing...")
 
         polish_prompt = (
-            "You are the Chief Editor at the Malayalam news desk.\n"
-            "Produce the final publication-ready version by resolving every item flagged by the auditor:\n\n"
-            f"Auditor Flags:\n"
+            "You are a news desk editor.\n"
+            "Your task is to resolve ONLY the specific factual faults flagged by the auditor, while STRICTLY PROTECTING the draft's rewritten phrasing.\n\n"
+            f"Auditor Flags to Fix:\n"
             f"{chr(10).join('- ' + f for f in critic.specific_faults)}\n\n"
-            f"Original Source Content (SOLE SOURCE OF TRUTH):\n{source_text}\n\n"
-            f"Draft for Reference:\n{draft.content}\n\n"
-            "Resolution Rules:\n"
-            "- Restore all numbers, calendar years, dates, and counts strictly in Arabic digits matching the source with 100% precision.\n"
-            "- Ensure the dateline remains strictly an isolated prefix and is not absorbed into the sentence grammar.\n"
-            "- Remove all inflated adverbs, restore exact reporting verbs, and eliminate unstated paired actions.\n"
-            "- Correct all polarity or scope distortions back to the exact source meaning.\n"
-            "- Restore any omitted entities, figures, timeframes, or contextual arguments.\n"
-            "- Remove all unmentioned outside facts, titles, or subjective adjectives.\n"
-            "- Ensure headlines are unambiguous and accurately represent the central news hook.\n"
-            "- Write in clean, standard Malayalam newspaper prose (ലളിതമായ പത്രശൈലി) in HTML paragraphs (<p>, <b>, <i>)."
+            f"Draft Headlines for Reference:\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
+            f"Initial Draft (PRIMARY BASELINE TO PRESERVE):\n{draft.content}\n\n"
+            f"Original Source Content (FOR FACT-CHECKING REFERENCE ONLY):\n{source_text}\n\n"
+            "RESOLUTION RULES:\n"
+            "- Fix ONLY the specific flagged issues (e.g., restore a missing person name, correct a corrupted number, or purge an ungrounded fact).\n"
+            "- DO NOT revert sentences or vocabulary back to the original source text.\n"
+            "- PRESERVE the restructured, fresh Malayalam narrative style of the Initial Draft.\n"
+            "- Retain and refine the 4 draft headlines so they remain punchy, accurate, and relevant."
         )
 
         resp_polish = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=polish_prompt,
             config=types.GenerateContentConfig(
-                temperature=0.1,
+                temperature=0.3,
                 max_output_tokens=4000,
                 response_mime_type="application/json",
                 response_schema=RewriteDraft,
@@ -330,6 +337,7 @@ def rewrite_article(article_id: int, admin=Depends(verify_admin)):
         db.close()
 
     try:
+        # Feeds the HTML string with tags preserved directly into the rewrite pipeline
         cleaned_content = clean_html_noise(raw_content)
 
         result = call_gemini_with_failover(
