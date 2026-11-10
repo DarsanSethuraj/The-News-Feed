@@ -152,11 +152,15 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "   - Never mirror the source text sentence-by-sentence or copy clauses verbatim. Do not reuse 4 or more consecutive words from any source sentence (excluding proper nouns, entity names, and exact numbers).\n"
             "   - Restructure syntax, invert clause orders, and vary sentence openings into active, flowing journalistic Malayalam.\n"
             "   - Format the body into clean HTML paragraphs (<p>) proportional to the length and depth of the source material. Never omit substantive points, secondary context, qualifying conditions, or distinct statements merely to shorten the text.\n\n"
-            
+            "   - Never drop or generalize specific background anecdotes, defining historical milestones, or illustrative traits into vague generic descriptions; retain concrete details while freshly rephrasing their syntax.\n\n"
+
             "4. PROPER NOUN & ACTOR COMPLETENESS:\n"
             "   - Every named person, organization, and actor present in the source MUST be explicitly named in the output. Never omit a person's name or reduce them solely to their title.\n\n"
 
-            "5. NUMERICAL & QUANTITATIVE FIDELITY: Preserve all numerical values, figures, counts, dates, calendar years, metrics, percentages, financial values, and numerical ranges with 100% precision in standard Arabic digits. Never generalize, approximate, or replace exact figures or ranges with qualitative descriptions. Every quantitative data point from the source must appear in digits."
+            "5. NUMERICAL & QUANTITATIVE FIDELITY:\n"
+            "   - Preserve all numerical values, figures, counts, dates, calendar years, metrics, percentages, financial values, durations, and numerical ranges with 100% precision strictly in standard Arabic digits.\n"
+            "   - Never convert digits into spelled-out Malayalam words under any circumstances; every count, threshold, duration, or unit must appear as Arabic numerals, never spelled out in letters.\n"
+            "   - Never generalize, approximate, or replace exact figures or ranges with qualitative descriptions. Every quantitative data point from the source must appear in digits.\n\n"
 
             "6. DATELINE PRESERVATION:\n"
             "   - If the source begins with a reporting location, preserve it strictly as an isolated bold prefix in Malayalam at the very start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never absorb it into the sentence grammar.\n\n"
@@ -201,12 +205,12 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
         "Treat the ORIGINAL SOURCE as the absolute definition of truth. Do NOT fact-check against the real world.\n\n"
 
         "INSPECT THE DRAFT FOR ONLY THESE CRITICAL DEFECTS:\n"
-        "1. DROPPED OR GENERALIZED QUANTITATIVE DATA: Did the draft omit any concrete number, metric, financial sum, date, percentage, or numerical range, or replace an exact figure with vague descriptive terms?\n"
+        "1. DROPPED, GENERALIZED, OR SPELLED-OUT NUMBERS: Did the draft omit any concrete number, metric, date, or numerical range, replace an exact figure with vague words, or write ANY number in spelled-out Malayalam words instead of standard Arabic digits?\n"
         "2. LATIN SCRIPT & UNTRANSLATED LOANWORDS: Did the draft include any English words written in Latin script rather than authentic Malayalam vocabulary?\n"
         "3. DROPPED ACTORS OR TITLES: Did the draft omit any named person, group, or official entity, or drop their assigned titles?\n"
         "4. OUTSIDE KNOWLEDGE INJECTION: Did the draft alter, replace, or 'correct' any title, role, or claim using external real-world knowledge?\n"
         "5. UNGROUNDED EXTRAPOLATION: Did the draft invent unmentioned physical, operational, temporal, or spatial details not explicitly stated in the source?\n"
-        "6. MISSING CORE ARGUMENTS OR FINDINGS: Did the draft completely drop a major substantive finding, statement, official explanation, or argument present in the source?\n\n"
+        "6. SUBSTANTIVE FACTUAL OMISSIONS: Did the draft omit, skip, or summarize away ANY concrete event, statement, explanation, qualifying context, or substantive factual detail present in the source text?\n\n"
 
         "DECISION CRITERIA (VERY IMPORTANT):\n"
         "- Set has_faults=true ONLY if one of the concrete defects above is present. List exact actionable instructions under specific_faults: 'Restore missing number: [value]', 'Replace Latin script text [word] with Malayalam', 'Restore entity [name]', etc.\n"
