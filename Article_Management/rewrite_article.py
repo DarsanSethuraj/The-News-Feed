@@ -157,11 +157,12 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "4. PROPER NOUN & ACTOR COMPLETENESS:\n"
             "   - Every named person, organization, and actor present in the source MUST be explicitly named in the output. Never omit a person's name or reduce them solely to their title.\n\n"
 
-            "5. NUMERICAL & QUANTITATIVE FIDELITY:\n"
-            "   - Preserve all numerical values, figures, counts, dates, calendar years, metrics, percentages, financial values, durations, and numerical ranges with 100% precision strictly in standard Arabic digits.\n"
-            "   - Never convert digits into spelled-out Malayalam words under any circumstances; every count, threshold, duration, or unit must appear as Arabic numerals, never spelled out in letters.\n"
-            "   - Never generalize, approximate, or replace exact figures or ranges with qualitative descriptions. Every quantitative data point from the source must appear in digits.\n\n"
-
+            "5. NUMERICAL & QUANTITATIVE FIDELITY (ARABIC DIGITS):\n"
+            "   - Preserve every discrete numerical figure with 100% precision strictly in standard Arabic digits without exception.\n"
+            "   - Exhaustive Numerical Retention: In any sequence, list, or statement containing multiple figures, every individual number must be explicitly retained. Never omit an intermediate value, baseline count, or qualifying quantity.\n"
+            "   - Never convert digits into spelled-out Malayalam words under any circumstances.\n"
+            "   - Never generalize, round off, or substitute exact figures with descriptive words.\n\n"
+            
             "6. DATELINE PRESERVATION:\n"
             "   - If the source begins with a reporting location, preserve it strictly as an isolated bold prefix in Malayalam at the very start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never absorb it into the sentence grammar.\n\n"
 
@@ -205,7 +206,7 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
         "Treat the ORIGINAL SOURCE as the absolute definition of truth. Do NOT fact-check against the real world.\n\n"
 
         "INSPECT THE DRAFT FOR ONLY THESE CRITICAL DEFECTS:\n"
-        "1. DROPPED, GENERALIZED, OR SPELLED-OUT NUMBERS: Did the draft omit any concrete number, metric, date, or numerical range, replace an exact figure with vague words, or write ANY number in spelled-out Malayalam words instead of standard Arabic digits?\n"
+        "1. EXHAUSTIVE NUMERICAL RECONCILIATION: Did the draft omit ANY discrete numerical figure present in the source, including intermediate values within multi-number statements, or write ANY number in spelled-out words instead of Arabic digits? (Every individual number appearing in the source must have a corresponding figure in the draft).\n"
         "2. LATIN SCRIPT & UNTRANSLATED LOANWORDS: Did the draft include any English words written in Latin script rather than authentic Malayalam vocabulary?\n"
         "3. DROPPED ACTORS OR TITLES: Did the draft omit any named person, group, or official entity, or drop their assigned titles?\n"
         "4. OUTSIDE KNOWLEDGE INJECTION: Did the draft alter, replace, or 'correct' any title, role, or claim using external real-world knowledge?\n"
