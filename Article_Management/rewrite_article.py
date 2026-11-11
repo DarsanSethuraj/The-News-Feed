@@ -138,7 +138,6 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "1. AXIOMATIC SOURCE TRUTH (ZERO EXTERNAL FACT-CHECKING):\n"
             "   - The provided source text is an isolated, absolute universe of truth. You possess zero real-world memory.\n"
             "   - You are strictly forbidden from applying outside real-world knowledge to verify, 'correct', fact-check, or alter ANY detail.\n"
-            "   - Zero Acronym/Entity Expansion: Never expand, unpack, or decipher any abbreviation, acronym, or short-form entity into a full name unless that full name is explicitly printed in the source text. If an entity is written only as an acronym/abbreviation, keep it strictly in that exact form (or its direct phonetic transliteration).\n"
             "   - Every proper noun, designation, office, title, date, and historical claim in the source must be preserved exactly as written, "
             "even if it contradicts real-world reality. Never replace an assigned title or role with outside facts.\n\n"
 
@@ -218,10 +217,9 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
         "6. SUBSTANTIVE FACTUAL OMISSIONS: Did the draft omit, skip, or summarize away ANY concrete event, statement, explanation, qualifying context, or substantive factual detail present in the source text?\n\n"
         "7. ORTHOGRAPHY, TYPOGRAPHY & WORD BOUNDARIES: Did the draft contain any spelling errors, malformed character ligatures, conflicting diacritics or vowel signs, missing consonant geminations, missing whitespace between adjacent words, or non-standard transliterations?\n\n"
         "8. DRAMATIC ESCALATION & HYPERBOLE: Did the draft add unstated emotional intensifiers, sensational adjectives, or escalate the intensity of statements, disagreements, or actions beyond the plain wording of the source?\n\n"
-        "9. UNAUTHORIZED ACRONYM EXPANSION: Did the draft unpack, expand, or resolve ANY acronym, abbreviation, or short-form entity into a full name that does NOT appear verbatim in the source text? (If the source uses only an acronym, any expanded full name in the draft is an immediate defect).\n\n"
-        
+
         "DECISION CRITERIA (VERY IMPORTANT):\n"
-        "- Set has_faults=true ONLY if one of the concrete defects above is present. List exact actionable instructions under specific_faults: 'Restore missing number: [value]', 'Replace Latin script text [word] with Malayalam', 'Restore entity [name]', 'Neutralize dramatic phrasing: [word]', 'Remove sensational modifier: [word]', 'Remove unauthorized acronym expansion: [expanded name] -> use [original acronym]' etc.\n"
+        "- Set has_faults=true ONLY if one of the concrete defects above is present. List exact actionable instructions under specific_faults: 'Restore missing number: [value]', 'Replace Latin script text [word] with Malayalam', 'Restore entity [name]', 'Neutralize dramatic phrasing: [word]', 'Remove sensational modifier: [word]', etc.\n"
         "- Do NOT flag fresh phrasing, active sentence structures, clause inversions, or paragraph consolidation as faults. Distinct syntax is desired and mandatory.\n"
         "- If all facts, numbers, names, and substantive details are preserved without outside injections or Latin-script words, set has_faults=false and leave specific_faults empty."
     )
