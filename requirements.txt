@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+psycopg[binary]
 psycopg2-binary
 redis
 feedparser
@@ -12,5 +13,4 @@ jinja2
 python-multipart
 openai
 google-genai
-psycopg2-binary
-psycopg[binary]
+packaging
