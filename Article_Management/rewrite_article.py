@@ -141,12 +141,13 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "   - Every proper noun, designation, office, title, date, and historical claim in the source must be preserved exactly as written, "
             "even if it contradicts real-world reality. Never replace an assigned title or role with outside facts.\n\n"
 
-            "2. ZERO EXTRAPOLATION & NO DRAMATIC EXAGGERATION:\n"
-            "   - Never invent, assume, visualize, or add unmentioned physical, anatomical, spatial, or operational details "
-            "(e.g., if the text says someone was struck, do NOT invent an unstated body part; if it says 'on duty', do NOT assume 'on patrol').\n"
-            "   - Do NOT exaggerate or intensify actions, claims, or conflicts. Match the exact intensity of reporting verbs and statements.\n"
-            "   - Retain exact grammatical scope and plurality: Never broaden singular events, dates, or terms into plural or generalized periods.\n"
-            "   - Retain exact agency and attribution: Never alter who announced, confirmed, or stated an action. Do not convert an announcement of an arrest into performing the arrest.\n\n"
+            "2. ZERO SPECULATIVE INFERENCE & OBJECTIVE RESTRAINT:\n"
+            "   - Clinical, Matter-of-Fact Tone: Report events with sober journalistic neutrality. Never append emotional adjectives, dramatic commentary, or sensational framing.\n"
+            "   - Zero Action or Verb Escalation: Maintain the exact intensity of actions, reporting verbs, and claims. Never escalate a statement into an attack, a disagreement into a fierce clash, or a routine event into a dramatic spectacle unless explicitly stated in the source.\n"
+            "   - Do not invent, assume, visualize, or extrapolate unmentioned physical, operational, temporal, or spatial details. State only what is explicitly established in the text.\n"
+            "   - Preserve exact grammatical scope, singularity, and plurality. Never convert singular events, periods, or terms into generalized plurals, and never narrow general descriptions into unverified specifics.\n"
+            "   - Preserve exact agency and attribution. Never transfer actions, statements, or announcements from an institution to an individual, or vice versa.\n"
+            "   - Demographic and Group Composition: Maintain the exact demographic scope, gender classification, and collective composition of all described subjects. Never convert gender-neutral collective nouns into gender-specific terms, and never alter the demographic boundaries of any group.\n\n"
 
             "3. DEEP RESTRUCTURING & PROPORTIONAL COMPLETENESS:\n"
             "   - Never mirror the source text sentence-by-sentence or copy clauses verbatim. Do not reuse 4 or more consecutive words from any source sentence (excluding proper nouns, entity names, and exact numbers).\n"
@@ -164,13 +165,15 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "   - Never generalize, round off, or substitute exact figures with descriptive words.\n\n"
             
             "6. DATELINE PRESERVATION:\n"
-            "   - If the source begins with a reporting location, preserve it strictly as an isolated bold prefix in Malayalam at the very start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never absorb it into the sentence grammar.\n\n"
+            "   - If the source begins with a reporting location, preserve it strictly as an isolated bold prefix in Malayalam at the very start of the first paragraph (format: '<p><b>[Location]:</b> ...</p>'). Never absorb it into the sentence grammar.\n"
+            "   - If the source does NOT begin with a reporting location, do NOT invent, assume, or add any dateline prefix.\n\n"
 
-            "7. PURE MALAYALAM DICTION: Never use unquoted English words written in Latin script anywhere within the Malayalam text. Always express concepts using standard, authentic Malayalam journalistic vocabulary."
+            "7. PURE MALAYALAM DICTION: Never use unquoted English words written in Latin script anywhere within the Malayalam text. Always express concepts using standard, authentic Malayalam journalistic vocabulary.\n\n"
 
             "HEADLINE REQUIREMENTS:\n"
             "- Provide exactly 4 unique, impactful Malayalam headlines in 'titles'.\n"
             "- Ground all headlines strictly in the core lead facts of the story. Include key actor names where appropriate.\n"
+            "- If the source headline contains two distinct perspectives or a cause-and-effect pair, reflect both aspects in the headlines.\n"
             "- Vary the editorial angles without sensational clickbait or terminological exaggeration.\n\n"
 
             "FORMATTING REQUIREMENTS:\n"
@@ -189,7 +192,7 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
         contents=user_input_draft,
         config=types.GenerateContentConfig(
             system_instruction=writer_prompt,
-            temperature=0.4,
+            temperature=0.3,
             max_output_tokens=6000,
             response_mime_type="application/json",
             response_schema=RewriteResponse,
@@ -212,9 +215,11 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
         "4. OUTSIDE KNOWLEDGE INJECTION: Did the draft alter, replace, or 'correct' any title, role, or claim using external real-world knowledge?\n"
         "5. UNGROUNDED EXTRAPOLATION: Did the draft invent unmentioned physical, operational, temporal, or spatial details not explicitly stated in the source?\n"
         "6. SUBSTANTIVE FACTUAL OMISSIONS: Did the draft omit, skip, or summarize away ANY concrete event, statement, explanation, qualifying context, or substantive factual detail present in the source text?\n\n"
+        "7. ORTHOGRAPHY, TYPOGRAPHY & WORD BOUNDARIES: Did the draft contain any spelling errors, malformed character ligatures, conflicting diacritics or vowel signs, missing consonant geminations, missing whitespace between adjacent words, or non-standard transliterations?\n\n"
+        "8. DRAMATIC ESCALATION & HYPERBOLE: Did the draft add unstated emotional intensifiers, sensational adjectives, or escalate the intensity of statements, disagreements, or actions beyond the plain wording of the source?\n\n"
 
         "DECISION CRITERIA (VERY IMPORTANT):\n"
-        "- Set has_faults=true ONLY if one of the concrete defects above is present. List exact actionable instructions under specific_faults: 'Restore missing number: [value]', 'Replace Latin script text [word] with Malayalam', 'Restore entity [name]', etc.\n"
+        "- Set has_faults=true ONLY if one of the concrete defects above is present. List exact actionable instructions under specific_faults: 'Restore missing number: [value]', 'Replace Latin script text [word] with Malayalam', 'Restore entity [name]', 'Neutralize dramatic phrasing: [word]', 'Remove sensational modifier: [word]', etc.\n"
         "- Do NOT flag fresh phrasing, active sentence structures, clause inversions, or paragraph consolidation as faults. Distinct syntax is desired and mandatory.\n"
         "- If all facts, numbers, names, and substantive details are preserved without outside injections or Latin-script words, set has_faults=false and leave specific_faults empty."
     )
@@ -252,7 +257,7 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "CRITICAL CORRECTION RULES (NO UNDO LOOP):\n"
             "1. PRESERVE THE REWRITTEN SYNTAX: The 'Initial Draft' is your primary narrative baseline. "
             "Do NOT revert sentences, vocabulary, or clause structures back to the original source text.\n"
-            "2. SURGICAL REPAIR ONLY: Fix only the exact faults listed in 'Auditor Flags' (e.g. restore an omitted quantitative value in Arabic digits, replace Latin-script English text with authentic Malayalam vocabulary, restore an omitted entity name/title, or excise an ungrounded detail).\n"
+            "2. SURGICAL REPAIR ONLY: Fix only the exact faults listed in 'Auditor Flags' (e.g. restore an omitted quantitative value in Arabic digits, replace Latin-script English text with authentic Malayalam vocabulary, restore an omitted entity name/title, correct corrupted character combinations/typos, or excise an ungrounded detail).\n"
             "3. NO LOSS OF REWRITTEN QUALITY: Keep the fresh, active journalistic Malayalam prose intact while making the text 100% factually compliant.\n"
             "4. HEADLINES: Preserve and refine the 4 draft headlines. Ensure dual perspectives are captured if relevant."
         )
