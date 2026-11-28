@@ -47,7 +47,10 @@ class RewriteResponse(BaseModel):
     titles: List[str] = Field(
         min_length=4,
         max_length=4,
-        description="Exactly 4 distinct, engaging Malayalam headlines capturing different news angles."
+        description=(
+            "Exactly 4 distinct, full, informative Malayalam newsdesk headlines derived strictly "
+            "from ONLY the first paragraph of the news and directly related to the source title."
+        )
     )
     content: str = Field(
         description="Restructured and rewritten Malayalam news article in clean HTML paragraphs (<p>)."
@@ -171,11 +174,22 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
 
             "7. PURE MALAYALAM DICTION: Never use unquoted English words written in Latin script anywhere within the Malayalam text. Always express concepts using standard, authentic Malayalam journalistic vocabulary.\n\n"
 
-            "HEADLINE REQUIREMENTS:\n"
-            "- Provide exactly 4 unique, impactful Malayalam headlines in 'titles'.\n"
-            "- Ground all headlines strictly in the core lead facts of the story. Include key actor names where appropriate.\n"
-            "- If the source headline contains two distinct perspectives or a cause-and-effect pair, reflect both aspects in the headlines.\n"
-            "- Vary the editorial angles without sensational clickbait or terminological exaggeration.\n\n"
+            "HEADLINE REQUIREMENTS (MALAYALAM NEWSDESK STANDARD):\n"
+            "- Provide exactly 4 genuinely distinct, well-crafted Malayalam headlines in 'titles'—do NOT produce 4 minor word-order tweaks of the exact same sentence.\n"
+            "- STRICT SOURCE SCOPE (FIRST PARAGRAPH + SOURCE TITLE ONLY):\n"
+            "  * Lead-Paragraph Exclusivity: Every fact, name, number, and detail used in all 4 headlines MUST come strictly and exclusively from the opening lead paragraph (first substantive paragraph) of the Source Content and the Source Title. NEVER pull facts, statements, or details from the second paragraph or later sections of the article.\n"
+            "  * Source-Title Anchoring: Every headline MUST remain directly related to and aligned with the central topic, event, and focus of the 'Source Title'. Do not drift to a secondary or unrelated angle.\n"
+            "- LENGTH & COMPLETENESS:\n"
+            "  * Headlines do NOT need to be artificially short. Write full, clear, informative Malayalam newsdesk headlines that capture the complete meaning of the lead paragraph and source title without sacrificing key context.\n"
+            "- FOUR DISTINCT STRUCTURAL ANGLES (ALL GROUNDED IN THE FIRST PARAGRAPH & SOURCE TITLE):\n"
+            "  1. [Direct Lead Framing]: Clear, straightforward journalistic presentation of the main event from the opening paragraph in alignment with the source title.\n"
+            "  2. [Actor / Subject-First Framing]: Leads with the key named person, group, or institution from the source title / first paragraph and highlights their specific action, decision, or statement.\n"
+            "  3. [Reason / Outcome / Dual-Aspect Framing]: Highlights the cause, reason, result, or dual perspective contained within the first paragraph and source title.\n"
+            "  4. [Desk Split / Inverted Syntax Framing]: Uses an alternative Malayalam desk structure (e.g., '[Topic/Actor]: [Detailed Lead Fact]' or inverted clause order) to present the same source-title focus freshly.\n"
+            "- STYLE & FIDELITY RULES:\n"
+            "  * Never copy 4 or more consecutive words from the source headline or first paragraph (excluding proper nouns, entity names, and exact numbers).\n"
+            "  * Every headline MUST strictly obey Rules 1–7 (zero external facts, zero acronym expansion, zero verb escalation, Arabic digits only, and zero Latin-script words).\n"
+            "  * Zero clickbait, teaser phrases ('ഞെട്ടിക്കുന്ന', 'ഇതാ കാരണം', etc.), exclamation marks, or HTML tags/numbering.\n\n"
 
             "FORMATTING REQUIREMENTS:\n"
             "- Return the article body in 'content' exclusively formatted using clean HTML tags: <p>, <b>, <i>, <ul>, <li>, <blockquote>.\n"
@@ -219,7 +233,8 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
         "7. ORTHOGRAPHY, TYPOGRAPHY & WORD BOUNDARIES: Did the draft contain any spelling errors, malformed character ligatures, conflicting diacritics or vowel signs, missing consonant geminations, missing whitespace between adjacent words, or non-standard transliterations?\n\n"
         "8. DRAMATIC ESCALATION & HYPERBOLE: Did the draft add unstated emotional intensifiers, sensational adjectives, or escalate the intensity of statements, disagreements, or actions beyond the plain wording of the source?\n\n"
         "9. UNAUTHORIZED ACRONYM EXPANSION: Did the draft unpack, expand, or resolve ANY acronym, abbreviation, or short-form entity into a full name that does NOT appear verbatim in the source text? (If the source uses only an acronym, any expanded full name in the draft is an immediate defect).\n\n"
-        
+        "10. HEADLINE SCOPE & FIDELITY: Did ANY of the 4 draft headlines (a) include facts from the 2nd paragraph or later instead of strictly the first paragraph and source title, (b) drift away from the core topic of the ORIGINAL SOURCE TITLE, (c) near-duplicate another draft headline, or (d) violate Rules 1–9 (Latin script, spelled-out numbers, ungrounded claims, or sensational escalation)?\n\n"
+
         "DECISION CRITERIA (VERY IMPORTANT):\n"
         "- Set has_faults=true ONLY if one of the concrete defects above is present. List exact actionable instructions under specific_faults: 'Restore missing number: [value]', 'Replace Latin script text [word] with Malayalam', 'Restore entity [name]', 'Neutralize dramatic phrasing: [word]', 'Remove sensational modifier: [word]', 'Remove unauthorized acronym expansion: [expanded name] -> use [original acronym]' etc.\n"
         "- Do NOT flag fresh phrasing, active sentence structures, clause inversions, or paragraph consolidation as faults. Distinct syntax is desired and mandatory.\n"
@@ -227,6 +242,7 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
     )
 
     user_input_audit = (
+        f"--- ORIGINAL SOURCE TITLE ---\n{source_title}\n\n"
         f"--- ORIGINAL SOURCE TEXT ---\n{source_text}\n\n"
         f"--- DRAFT HEADLINES ---\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
         f"--- DRAFT CONTENT ---\n{draft.content}"
@@ -261,12 +277,12 @@ def execute_audit_and_correction_pipeline(client, source_title: str, source_text
             "Do NOT revert sentences, vocabulary, or clause structures back to the original source text.\n"
             "2. SURGICAL REPAIR ONLY: Fix only the exact faults listed in 'Auditor Flags' (e.g. restore an omitted quantitative value in Arabic digits, replace Latin-script English text with authentic Malayalam vocabulary, restore an omitted entity name/title, correct corrupted character combinations/typos, or excise an ungrounded detail).\n"
             "3. NO LOSS OF REWRITTEN QUALITY: Keep the fresh, active journalistic Malayalam prose intact while making the text 100% factually compliant.\n"
-            "4. HEADLINES: Preserve and refine the 4 draft headlines. Ensure dual perspectives are captured if relevant."
-        )
+            "4. HEADLINES: Ensure all 4 headlines are distinct, pure Malayalam, free of clickbait, directly related to the 'Original Source Title', and strictly grounded ONLY in the opening first paragraph of the source content (plus the source title). Do not truncate them artificially, and do not pull facts from paragraph 2 onward."        )
 
         user_input_patch = (
             f"Auditor Flags to Fix:\n"
             f"{chr(10).join('- ' + f for f in audit.specific_faults)}\n\n"
+            f"Original Source Title:\n{source_title}\n\n"
             f"Draft Headlines for Reference:\n{json.dumps(draft.titles, ensure_ascii=False)}\n\n"
             f"Initial Draft (PRIMARY BASELINE TO PRESERVE AND PATCH):\n{draft.content}\n\n"
             f"Original Source Content (FOR FACT-CHECKING REFERENCE ONLY):\n{source_text}"
